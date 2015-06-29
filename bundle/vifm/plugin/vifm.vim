@@ -4,9 +4,9 @@
 " Last Change: 2001 November 29
 
 " Maintainer: xaizek <xaizek@openmailbox.org>
-" Last Change: 2012 March 6
+" Last Change: 2014 November 05
 
-" vifm and vifm.vim can be found at http://vifm.sf.net
+" vifm and vifm.vim can be found at http://vifm.info/
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -14,6 +14,9 @@ if exists('loaded_vifm')
 	finish
 endif
 let loaded_vifm = 1
+
+" Remember path to the script to know where to look for vifm documentation.
+let s:script_path = expand('<sfile>')
 
 " Setup commands to run vifm.
 
@@ -23,28 +26,11 @@ let loaded_vifm = 1
 " :DiffVifm - load file for :vert diffsplit.
 " :TabVifm - load file or files in tabs.
 
-" If the commands clash with your other user commands you can change the
-" command name.
-
-"	if !exists(':Insert_Your_Command_Name_Here')
-"		command -bar -nargs=* -complete=dir Insert_Your_Command_Name_Here :call s:StartVifm('edit', <f-args>)
-"	endif
-
-if !exists(':EditVifm')
-	command -bar -nargs=* -complete=dir EditVifm :call s:StartVifm('edit', <f-args>)
-endif
-if !exists(':VsplitVifm')
-	command -bar -nargs=* -complete=dir VsplitVifm :call s:StartVifm('vsplit', <f-args>)
-endif
-if !exists(':SplitVifm')
-	command -bar -nargs=* -complete=dir SplitVifm :call s:StartVifm('split', <f-args>)
-endif
-if !exists(':DiffVifm')
-	command -bar -nargs=* -complete=dir DiffVifm :call s:StartVifm('vert diffsplit', <f-args>)
-endif
-if !exists(':TabVifm')
-	command -bar -nargs=* -complete=dir TabVifm :call s:StartVifm('tablast | tab drop', <f-args>)
-endif
+command! -bar -nargs=* -complete=dir EditVifm :call s:StartVifm('edit', <f-args>)
+command! -bar -nargs=* -complete=dir VsplitVifm :call s:StartVifm('vsplit', <f-args>)
+command! -bar -nargs=* -complete=dir SplitVifm :call s:StartVifm('split', <f-args>)
+command! -bar -nargs=* -complete=dir DiffVifm :call s:StartVifm('vert diffsplit', <f-args>)
+command! -bar -nargs=* -complete=dir TabVifm :call s:StartVifm('tablast | tab drop', <f-args>)
 
 function! s:StartVifm(editcmd, ...)
 	echohl WarningMsg | echo 'vifm executable wasn''t found' | echohl None
@@ -59,39 +45,49 @@ if !exists('g:vifm_exec_args')
 endif
 
 if !exists('g:vifm_term')
-	let g:vifm_term = 'xterm -e'
+	if has('win32')
+		if filereadable('C:\Windows\system32\cmd.exe')
+			let g:vifm_term = 'C:\Windows\system32\cmd.exe /C'
+		else
+			" If don't find use the integrate shell it work too
+			let g:vifm_term = ''
+		endif
+	else
+		let g:vifm_term = 'xterm -e'
+	endif
 endif
 
-if has('win32')
+if !exists('g:vifm_home') &&  has('win32')
 	if filereadable(g:vifm_exec) || filereadable(g:vifm_exec.'.exe')
-		let s:vifm_home = fnamemodify(g:vifm_exec, ':p:h')
+		let g:vifm_home = fnamemodify(g:vifm_exec, ':p:h')
 	else
-		let s:vifm_home = $PATH
-		let s:vifm_home = substitute(s:vifm_home, ';', ',', 'g').',.'
-		let s:lst_str = globpath(s:vifm_home, g:vifm_exec, 1)
+		let g:vifm_home = $PATH
+		let g:vifm_home = substitute(g:vifm_home, ';', ',', 'g').',.'
+		let s:lst_str = globpath(g:vifm_home, g:vifm_exec, 1)
 		let s:lst = split(s:lst_str, '\n')
 		if empty(s:lst)
-			let s:lst_str = globpath(s:vifm_home, g:vifm_exec.'.exe', 1)
+			let s:lst_str = globpath(g:vifm_home, g:vifm_exec.'.exe', 1)
 			let s:lst = split(s:lst_str, '\n')
 		endif
 		if empty(s:lst)
 			finish
 		endif
-		let s:vifm_home = s:lst[0]
+		let g:vifm_home = s:lst[0]
 		unlet s:lst_str
 		unlet s:lst
 	endif
-	if !filereadable(s:vifm_home.'/vifmrc')
-		unlet s:vifm_home
+	if !filereadable(g:vifm_home.'/vifmrc')
+		unlet g:vifm_home
 	endif
 endif
 
-if !exists('s:vifm_home')
-	if exists('$HOME') && !isdirectory('$APPDATA/Vifm')
-		let s:vifm_home = $HOME."/.vifm"
-	elseif exists('$APPDATA')
-		let s:vifm_home = $APPDATA."/Vifm"
+if !exists('g:vifm_home')
+	if exists('$HOME') && isdirectory($HOME .'/.vifm/')
+		let g:vifm_home = $HOME."/.vifm"
+	elseif exists('$APPDATA') && isdirectory($APPDATA.'/Vifm/')
+		let g:vifm_home = $APPDATA."/Vifm"
 	else
+		echohl WarningMsg | echo 'Impossible to find your vifm configuration directory. Launch vifm one time and try again.' | echohl None
 		finish
 	endif
 endif
@@ -109,18 +105,24 @@ function! s:StartVifm(editcmd, ...)
 
 	" Gvim cannot handle ncurses so run vifm in a terminal.
 	if has('gui_running')
-		execute 'silent !' g:vifm_term g:vifm_exec '-f' g:vifm_exec_args ldir rdir
+		execute 'silent !' g:vifm_term g:vifm_exec '-f' g:vifm_exec_args ldir
+		      \ rdir
 	else
-		execute 'silent !' g:vifm_exec '+only' '-f' g:vifm_exec_args ldir
+		execute 'silent !' g:vifm_exec '-f' g:vifm_exec_args ldir rdir
 	endif
 
 	redraw!
+
+	if v:shell_error != 0
+		echohl WarningMsg | echo 'Got non-zero code from vifm' | echohl None
+		return
+	endif
 
 	" The selected files are written and read from a file instead of using
 	" vim's clientserver so that it will work in the console without a X server
 	" running.
 
-	let vimfiles = fnamemodify(s:vifm_home.'/vimfiles', ':p')
+	let vimfiles = fnamemodify(g:vifm_home.'/vimfiles', ':p')
 	if !file_readable(vimfiles)
 		echohl WarningMsg | echo 'vimfiles file not found' | echohl None
 		return
@@ -167,5 +169,69 @@ function! s:PreparePath(path)
 	endif
 	return path
 endfunction
+
+" K {{{1
+
+" Mostly stolen from vim-scriptease, created by Tim Pope <http://tpo.pe/>
+
+function! vifm#synnames(...) abort
+	if a:0
+		let [line, col] = [a:1, a:2]
+	else
+		let [line, col] = [line('.'), col('.')]
+	endif
+	return reverse(map(synstack(line, col), 'synIDattr(v:val,"name")'))
+endfunction
+
+let g:vifm_help_mapping = get(g:, 'vifm_help_mapping', 'K')
+
+augroup VifmHelpAutoCmds
+	autocmd!
+	execute "autocmd FileType vifm,vifm-cmdedit nnoremap <silent><buffer>"
+	      \ g:vifm_help_mapping ":execute <SID>DisplayVifmHelp()<CR>"
+augroup END
+
+" Modifies 'runtimepath' to include directory with vifm documentation and runs
+" help.  Result should be processed with :execute to do not print stacktrace
+" on exception.
+function! s:DisplayVifmHelp()
+	let runtimepath = &runtimepath
+	let vimdoc = substitute(s:script_path, '[/\\]plugin[/\\].*', '', '')
+	execute 'set runtimepath+='.vimdoc.'/../vim-doc'
+
+	try
+		execute 'help '.s:GetVifmHelpTopic()
+	catch E149
+		let msg = substitute(v:exception, '[^:]\+:', '', '')
+		return 'echoerr "'.escape(msg, '\"').'"'
+	finally
+		let &runtimepath = runtimepath
+	endtry
+	return ''
+endfunction
+
+function! s:GetVifmHelpTopic()
+	let col = col('.') - 1
+	while col && getline('.')[col] =~# '\k'
+		let col -= 1
+	endwhile
+	let pre = col == 0 ? '' : getline('.')[0 : col]
+	let syn = get(vifm#synnames(), 0, '')
+	let cword = expand('<cword>')
+	if syn ==# 'vifmBuiltinFunction'
+		let topic = cword.'()'
+	elseif syn ==# 'vifmOption'
+		let topic = "'".substitute(cword, '^\(no\|inv\)', '', '')."'"
+	elseif syn ==# 'vifmCommand' || pre =~# ':$'
+		let topic = ':'.cword
+	elseif syn ==# 'vifmNotation'
+		let topic = 'mappings'
+	else
+		let topic = '*'.cword
+	endif
+	return 'vifm-'.topic
+endfunction
+
+" }}}1
 
 " vim: set tabstop=2 softtabstop=2 shiftwidth=2 noexpandtab :
