@@ -9,9 +9,10 @@ function! s:generate_names()
   let i = 1
   let last_buffer = bufnr('$')
   let current_buffer = bufnr('%')
+  let alt_buffer = bufnr('#')
   while i <= last_buffer
     if bufexists(i) && buflisted(i)
-      let modified = ' '
+      let modified = ''
       if getbufvar(i, '&mod')
         let modified = g:bufferline_modified
       endif
@@ -31,12 +32,17 @@ function! s:generate_names()
         if g:bufferline_show_bufnr != 0 && g:bufferline_status_info.count >= g:bufferline_show_bufnr
           let name =  i . ':'
         endif
-        let name .= fname . modified
+        let name .= fname
+        let name .= modified
 
         if current_buffer == i
           let name = g:bufferline_active_buffer_left . name . g:bufferline_active_buffer_right
           let g:bufferline_status_info.current = name
         else
+          if alt_buffer == i
+            let name = g:bufferline_alt_buffer_tag . name
+          endif
+
           let name = g:bufferline_separator . name . g:bufferline_separator
         endif
 

@@ -9,10 +9,11 @@ function! s:check_defined(variable, default)
   endif
 endfunction
 
+call s:check_defined('g:bufferline_alt_buffer_tag', '~')
 call s:check_defined('g:bufferline_active_buffer_left', '[')
 call s:check_defined('g:bufferline_active_buffer_right', ']')
 call s:check_defined('g:bufferline_separator', ' ')
-call s:check_defined('g:bufferline_modified', '+')
+call s:check_defined('g:bufferline_modified', '[+]')
 call s:check_defined('g:bufferline_echo', 1)
 call s:check_defined('g:bufferline_show_bufnr', 1)
 call s:check_defined('g:bufferline_fname_mod', ':t')
