@@ -1,6 +1,6 @@
 " vifm syntax file
 " Maintainer:  xaizek <xaizek@openmailbox.org>
-" Last Change: April 26, 2015
+" Last Change: August 14, 2015
 " Based On:    Vim syntax file by Dr. Charles E. Campbell, Jr.
 
 if exists('b:current_syntax')
@@ -19,7 +19,7 @@ syntax keyword vifmCommand contained alink apropos change chmod chown clone
 		\ lstrash marks mes[sages] mkdir m[ove] noh[lsearch] on[ly] popd pushd pwd
 		\ q[uit] redr[aw] reg[isters] rename restart restore rlink screen sh[ell]
 		\ sor[t] sp[lit] s[ubstitute] touch tr trashes sync undol[ist] ve[rsion]
-		\ vie[w] vifm vs[plit] w[rite] wq x[it] y[ank] nextgroup=vifmArgs
+		\ vie[w] vifm vs[plit] winc[md] w[rite] wq x[it] y[ank] nextgroup=vifmArgs
 
 " commands that might be prepended to a command without changing everything else
 syntax keyword vifmPrefixCommands contained windo winrun
@@ -40,7 +40,7 @@ syntax keyword vifmHiCommand contained hi[ghlight]
 syntax keyword vifmInvertCommand contained invert
 syntax keyword vifmLetCommand contained let
 syntax keyword vifmUnletCommand contained unl[et]
-syntax keyword vifmSetCommand contained se[t]
+syntax keyword vifmSetCommand contained se[t] setl[ocal] setg[lobal]
 syntax keyword vifmSoCommand contained so[urce]
 syntax keyword vifmMarkCommand contained ma[rk]
 syntax keyword vifmFtCommand contained filet[ype] filex[type] filev[iewer]
@@ -49,7 +49,8 @@ syntax keyword vifmNormalCommand contained norm[al]
 		\ nextgroup=vifmColonSubcommand
 
 " Builtin functions
-syntax match vifmBuiltinFunction '\(filetype\|expand\|executable\|has\|system\)\ze('
+syntax match vifmBuiltinFunction
+		\ '\(filetype\|expand\|executable\|has\|layoutis\|paneisat\|system\)\ze('
 
 " Operators
 syntax match vifmOperator "\(==\|!=\|>=\?\|<=\?\|\.\|-\|+\)" skipwhite
@@ -59,7 +60,7 @@ syntax keyword vifmHiArgs contained cterm ctermfg ctermbg
 syntax case ignore
 syntax keyword vifmHiGroups contained WildMenu Border Win CmdLine CurrLine
 		\ OtherLine Directory Link Socket Device Executable Selected BrokenLink
-		\ TopLine TopLineSel StatusLine JobLine Fifo ErrorMsg
+		\ TopLine TopLineSel StatusLine JobLine Fifo ErrorMsg Menu
 syntax keyword vifmHiStyles contained bold underline reverse inverse standout
 		\ none
 syntax keyword vifmHiColors contained black red green yellow blue magenta cyan
@@ -263,17 +264,20 @@ syntax region vifmArgs start='!\?\zs\(\s*\S\+\|[^a-zA-Z]\)'
 		\ contains=vifmStringInExpr
 
 syntax region vifmSet
-		\ start='\(\s\|:\)*\<se\%[t]\>' skip='\(\n\s*\\\)\|\(\n\s*".*$\)' end='$'
+		\ start='\(\s\|:\)*\<\(se\%[t]\|setg\%[lobal]\|setl\%[ocal]\)\>'
+		\ skip='\(\n\s*\\\)\|\(\n\s*".*$\)' end='$'
 		\ keepend
 		\ contains=vifmSetCommand,vifmOption,vifmSetAssignSQS,vifmSetAssignDQS,vifmSetAssignNS
 		\,vifmComment
 syntax region vifmSetN
-		\ start='\(\s\|:\)*\<se\%[t]\>' skip='\(\n\s*\\\)\|\(\n\s*".*$\)' end='$'
+		\ start='\(\s\|:\)*\<\(se\%[t]\|setg\%[lobal]\|setl\%[ocal]\)\>'
+		\ skip='\(\n\s*\\\)\|\(\n\s*".*$\)' end='$'
 		\ keepend
 		\ contains=vifmSetCommand,vifmOption,vifmSetAssignSQS,vifmSetAssignDQS,vifmSetAssignNSN
 		\,vifmComment,vifmNotation
 syntax region vifmSet2 contained
-		\ start='^\(\s\|:\)*\<se\%[t]\>' skip='\(\n\s*\\\)\|\(\n\s*".*$\)' end='$'
+		\ start='^\(\s\|:\)*\<\(se\%[t]\|setg\%[lobal]\|setl\%[ocal]\)\>'
+		\ skip='\(\n\s*\\\)\|\(\n\s*".*$\)' end='$'
 		\ keepend
 		\ contains=vifmSetCommand,vifmOption,vifmSetAssignSQS,vifmSetAssignDQS,vifmSetAssignNSN
 		\,vifmComment,vifmNotation

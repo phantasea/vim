@@ -1,4 +1,4 @@
-*vifm-app.txt*    For Vifm version 0.8-beta  Last change: 2015 Jun 19
+*vifm-app.txt*    For Vifm version 0.8  Last change: 2015 Aug 18
 
  Email for bugs and suggestions: <xaizek@openmailbox.org>
 
@@ -50,10 +50,16 @@ Tag name structure:
 *vifm-options*
 
 General format:
-vifm [OPTION]... [ LWIN_DIR [ RWIN_DIR ] ]
+vifm [OPTION]... [ path [ path ] ]
 
 vifm starts in the current directory unless it is given a different directory
-on the command line.
+on the command line or |vifm-'vifminfo'| includes "savedirs" (in which case
+last visited directories are used as defaults).
+
+vifm -
+Read list of files from standard input stream and compose custom view out of
+them (see |vifm-custom-views|).  Current working directory is used as a base
+for relative paths.
 
 vifm /path/to/directory/one
 or
@@ -66,12 +72,12 @@ single-view mode on finishing previous session.  To suppress this behaviour
 When only one path argument is found on command-line, the left/top pane is
 automatically set as the current view.
 
-
-                                               *vifm---select*
 Paths to files are also allowed in case you want vifm to start with some
-archive opened.  If you want to select file, prepend its path with --select.
+archive opened.
 
 The other command line arguments are:
+--select <path>                                *vifm---select*
+    open parent directory of the given path and select specified file in it.
 -f                                             *vifm--f*
     makes vifm instead of opening files write selection to $VIFM/vimfiles and
     quit.
@@ -186,6 +192,8 @@ Most movement commands also accept a count, 12j would move down 12 files.
     move up [count] files.
 [count]G or [count]gg
     move to list position [count].
+[count]h
+    go up [count] directories.
 
 Scrolling panes~
 
@@ -328,6 +336,7 @@ zO - show files hidden by file name filter.    *vifm-zO*
 
 zM - restore all filters.                      *vifm-zM*
 zR - remove all filters.                       *vifm-zR*
+zr - remove local filter.                      *vifm-zr*
 
 zd                                             *vifm-zd*
     exclude selection or current file from custom view.  Does nothing for
@@ -998,6 +1007,7 @@ These commands see '|' as part of their arguments even when it's escaped:
     :qnoremap
     :vmap
     :vnoremap
+    :wincmd
     :windo
     :winrun
 
@@ -1820,7 +1830,8 @@ yet supported) and might be changed in future releases, or get an alias.
 :se[t] all
     display all options.
 :se[t] opt1=val1 opt2='val2' opt3="val3" ...
-    sets given options.  You can use the following syntax:
+    sets given options.  For |vifm-local-options| both values are set.
+    You can use the following syntax:
      - for all options - option, option? and option&
      - for boolean options - nooption, invoption and option!
      - for integer options - option=x, option+=x and option-=x
@@ -1845,8 +1856,28 @@ yet supported) and might be changed in future releases, or get an alias.
     Option name can be prepended and appended by any number of whitespace
     characters.
 
-:sh[ell]                                       *vifm-:shell* *vifm-:sh*
-    start a shell in current directory.
+                                               *vifm-:setglobal* *vifm-:setg*
+:setg[lobal]
+    display all global options that differ from their default value.
+:setg[lobal] all
+    display all global options.
+:setg[lobal] opt1=val1 opt2='val2' opt3="val3" ...
+    same as |vifm-:set|, but changes/prints only global options or global
+    values of local options.  Changes to the latter might be not visible until
+    directory is changed.
+
+                                               *vifm-:setlocal* *vifm-:setl*
+:setl[ocal]
+    display all local options that differ from their default value.
+:setl[ocal] all
+    display all local options.
+:setl[ocal] opt1=val1 opt2='val2' opt3="val3" ...
+    same as |vifm-:set|, but changes/prints only local values of local
+    options.
+
+:sh[ell][!]                                    *vifm-:shell* *vifm-:sh*
+    start a shell in current directory.  "!" suppresses spawning dedicated
+    window of terminal multiplexer for a shell.
 
 :sor[t]                                        *vifm-:sort* *vifm-:sor*
     display dialog with different sorting methods, where one can select
@@ -1951,6 +1982,9 @@ yet supported) and might be changed in future releases, or get an alias.
     split the window vertically to show both file directories.  Also changes
     other pane to the path (absolute or relative to current directory of active
     pane).
+
+:[count]winc[md] {arg}                         *vifm-:wincmd* *vifm-:winc*
+    same as running Ctrl-W [count] {arg}.
 
 :windo [command...]                            *vifm-:windo*
     execute command for each pane (same as :winrun % command).
@@ -2122,6 +2156,9 @@ The command macros may be used in user commands.
                                                                *vifm-%i*
   %i        completely ignore command output.
 
+                                                               *vifm-%pc*
+  %pc       marks end of the main command and beginning of the clear command,
+            which is invoked on closing preview of a file.
 
   The following dimensions and coordinates are in characters:
                                                                *vifm-%px*
@@ -2328,8 +2365,18 @@ in their name.
 *vifm-set-options*
 
                                                *vifm-local-options*
-These are kind of options that are local to a specific view. So you can set
+These are kind of options that are local to a specific view.  So you can set
 ascending sorting order for left pane and descending order for right pane.
+
+In addition to being local to views, each such option also has two values:
+ - local to current directory (value associated with current location);
+ - global to current directory (value associated with the pane).
+
+The idea is that current directory can be made a temporary exception to
+regular configuration of the view, until directory change.  Use
+|vifm-:setlocal| for that.  |vifm-:setglobal| changes view value not affecting
+settings until directory change.  |vifm-:set| applies changes immediately to
+all values.
 
                                                *vifm-'aproposprg'*
 aproposprg
@@ -2685,6 +2732,7 @@ default: "%l/%S "
 
 Determines the content of the ruler.  Its minimal width is 13 characters and
 it's right aligned.  Following macros are supported:
+    %= - separation point between left and right aligned halves of the line
     %l - file number
     %L - total number of files in view (including filtered out ones)
     %- - number of filtered out files
@@ -2757,7 +2805,9 @@ particular kinds of file systems that can slow down file browsing.
 Currently this means don't check if directory has changed, skip check if
 target of symbolic links exists, assume that link target located on slow fs
 to be a directory (allows entering directories and navigating to files via
-|vifm-gf|).
+|vifm-gf|).  If you set the option to "*", it means all the systems are
+considered slow (usefull for cygwin, where all the checks might render vifm
+very slow if there are network mounts).
 
 Example for autofs root /mnt/autofs: >
   set slowfs+=/mnt/autofs
@@ -2779,21 +2829,22 @@ local
 
 Sets list of sorting keys (first item is primary key, second is secondary
 key, etc.):
-   [+-]ext   - extension
-   [+-]name  - name (including extension)
-   [+-]iname - name (including extension, ignores case)
-   [+-]type  - file type (dir/reg/exe/link/char/block/sock/fifo)
-   [+-]dir   - directory grouping (directory < file)
-   [+-]gid   - group id (*nix only)
-   [+-]gname - group name (*nix only)
-   [+-]mode  - file mode (file type + permissions) in octal (*nix only)
-   [+-]perms - permissions string (*nix only)
-   [+-]uid   - owner id (*nix only)
-   [+-]uname - owner name (*nix only)
-   [+-]size  - size
-   [+-]atime - time accessed (e.g. read, executed)
-   [+-]ctime - time changed (changes in metadata, e.g. mode)
-   [+-]mtime - time modified (when file contents is changed)
+   [+-]ext     - extension of files and directories
+   [+-]fileext - extension of files only
+   [+-]name    - name (including extension)
+   [+-]iname   - name (including extension, ignores case)
+   [+-]type    - file type (dir/reg/exe/link/char/block/sock/fifo)
+   [+-]dir     - directory grouping (directory < file)
+   [+-]gid     - group id (*nix only)
+   [+-]gname   - group name (*nix only)
+   [+-]mode    - file mode (file type + permissions) in octal (*nix only)
+   [+-]perms   - permissions string (*nix only)
+   [+-]uid     - owner id (*nix only)
+   [+-]uname   - owner name (*nix only)
+   [+-]size    - size
+   [+-]atime   - time accessed (e.g. read, executed)
+   [+-]ctime   - time changed (changes in metadata, e.g. mode)
+   [+-]mtime   - time modified (when file contents is changed)
 
 Note: look for st_atime, st_ctime and st_mtime in "man 2 stat" for more
 information on time keys.
@@ -2945,7 +2996,9 @@ undolevels ul
 type: integer
 default: 100
 
-Maximum number of changes that can be undone.
+Maximum number of changes that can be undone.  Note that here single file
+operation is used as a unit, not operation, i.e. deletion of 101 files will
+exceed default limit.
 
                                                *vifm-'vicmd'*
 vicmd
@@ -3302,6 +3355,8 @@ executable({expr})  Integer       Checks whether {expr} command available.
 expand({expr})      String        Expands special keywords in {expr}.
 filetype({fnum})    String        Returns file type from position.
 has({property})     Integer       Checks whether instance has {property}.
+layoutis({type})    Integer       Checks whether layout is of type {type}.
+paneisat({loc})     Integer       Checks whether current pane is at {loc}.
 system({command})   String        Executes shell command and returns its output.
 
 
@@ -3350,6 +3405,7 @@ The result is a string, which represents file type and is one of the list:
     fifo   pipes
     sock   *nix domain sockets
     ?      unknown file type (should never appear)
+
 Parameter {fnum} can have following values:
     - '.' to get type of file under the cursor in the active pane
 
@@ -3371,6 +3427,32 @@ Usage example: >
 
   execute 'set' 'statusline="  %t%= %A '.$RIGHTS.'%15E %20d  "'
 <
+
+layoutis({type})                               *vifm-layoutis()*
+
+Checks whether current interface layout is {type} or not, where {type} can
+be:
+    only    single-pane mode
+    split   double-pane mode (either vertical or horizon split)
+    vsplit  vertical split (left and right panes)
+    hsplit  horizontal split (top and bottom panes)
+
+Any other value yields 0.
+
+Usage example: >
+  " automatically split vertically before enabling preview
+  :nnoremap w :if layoutis('only') | vsplit | endif | view<cr>
+<
+
+paneisat({loc})                                *vifm-paneisat()*
+
+Checks whether position of active pane in current layout matches one of the
+following locations:
+    top     pane reaches top border
+    bottom  pane reaches bottom border
+    left    pane reaches left border
+    right   pane reaches right border
+
 
 system({command})                              *vifm-system()*
 
@@ -3396,7 +3478,7 @@ Ctrl-L - redraw the menu.                      *vifm-m_CTRL-L*
 
 Escape, Ctrl-C                                 *vifm-m_Escape* *vifm-m_CTRL-C*
 ZZ, ZQ                                         *vifm-m_ZQ* *vifm-m_ZZ*
-q                                             *vifm-m_q*
+q                                              *vifm-m_q*
     quit.
 
 In all menus~
@@ -3433,6 +3515,8 @@ zL                                             *vifm-m_zL*
 b                                              *vifm-m_b*
     interpret content of the menu as list of paths and use it to create
     custom view in place of previously active pane.  See |vifm-custom-views|.
+B                                              *vifm-m_B*
+    same as above, but creates unsorted view.
 
 
 Below is description of additional commands and reaction on selection in some
@@ -3622,8 +3706,8 @@ On *nix systems $HOME is normally present and used as is.
 On Windows systems vifm tries to find correct home directory in the following
 order:
  - $HOME variable;
- - $USERPROFILE variable;
- - a combination of $HOMEDRIVE and $HOMEPATH variables.
+ - $USERPROFILE variable (on Windows only);
+ - a combination of $HOMEDRIVE and $HOMEPATH variables (on Windows only).
 
                                                *vifm-$VIFM*
 vifm tries to find correct configuration directory by checking the following
@@ -3682,7 +3766,7 @@ are some exceptions:
 
                                                *vifm-scripts*
 The $VIFM/scripts directory can contain shell scripts.  vifm modifies
-it's PATH environment variable to let user run those scripts without specifying
+its PATH environment variable to let user run those scripts without specifying
 full path.  All subdirectories of the $VIFM/scripts will be added to PATH too.
 Script in a subdirectory overlaps script with the same name in all its parent
 directories.
