@@ -19,7 +19,7 @@ syntax keyword vifmCommand contained alink apropos change chmod chown clone
 		\ lstrash marks mes[sages] mkdir m[ove] noh[lsearch] on[ly] popd pushd pwd
 		\ q[uit] redr[aw] reg[isters] rename restart restore rlink screen sh[ell]
 		\ sor[t] sp[lit] s[ubstitute] touch tr trashes sync undol[ist] ve[rsion]
-		\ vie[w] vifm vs[plit] winc[md] w[rite] wq x[it] y[ank] nextgroup=vifmArgs
+		\ vie[w] vifm vs[plit] winc[md] w[rite] wq x[it] y[ank] bmark nextgroup=vifmArgs
 
 " commands that might be prepended to a command without changing everything else
 syntax keyword vifmPrefixCommands contained windo winrun
