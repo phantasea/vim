@@ -15,8 +15,8 @@ set cpo&vim
 
 "====[ INTERFACE ]=============================================
 
-nnoremap           /   :call HLNextSetTrigger()<CR>/
-nnoremap           ?   :call HLNextSetTrigger()<CR>?
+"nnoremap           /   :call HLNextSetTrigger()<CR>/
+"nnoremap           ?   :call HLNextSetTrigger()<CR>?
 nnoremap  <silent> n  n:call HLNext()<CR>
 nnoremap  <silent> N  N:call HLNext()<CR>
 
