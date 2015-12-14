@@ -6,12 +6,11 @@ endif
 let g:loaded_linemark = 1
 
 nnoremap  <silent> mm :call <SID>HighlightLine('index') \| nohls<CR>
-nnoremap  <silent> mc :call <SID>HighlightClear()<CR>
+nnoremap  <silent> mq :call <SID>HighlightClear()<CR>
 nnoremap  <silent> 'n :call <SID>HighlightGoto('f')<CR>
 nnoremap  <silent> 'p :call <SID>HighlightGoto('b')<CR>
 nnoremap  <silent> m<space> :call <SID>HighlightShow("all")<CR>
 
-let s:all_marks = "abefghijklnpqtxz"
 let s:lcolor_bg_tui = ["Blue", "Green","Cyan", "Red",  "Yellow","Magenta","LightGray"]
 let s:lcolor_fg_tui = ["White","White","White","White","White", "White",  "Black"]
 let s:markLines = {}
@@ -42,6 +41,7 @@ function! <SID>HighlightLine(cmode)
         let bgColor_tui = s:lcolor_bg_tui[idx % s:lcolor_max]
         let fgColor_tui = s:lcolor_fg_tui[idx % s:lcolor_max]
     else
+        " hili by line no.
         let bgColor_tui = s:lcolor_bg_tui[lnum % s:lcolor_max]
         let fgColor_tui = s:lcolor_fg_tui[lnum % s:lcolor_max]
     endif
@@ -49,24 +49,13 @@ function! <SID>HighlightLine(cmode)
     exec 'hi '. colorgrp. ' ctermfg='. fgColor_tui. ' ctermbg='. bgColor_tui
     exec 'syn match '. colorgrp. ' "'. linePattern. '" containedin=ALL'
 
-	let idx = 0
-	while idx < strlen(s:all_marks)
-		let chr = strpart(s:all_marks, idx, 1)
-		let lno = line("'".chr)
-        if lno == 0
-            break
-        endif
-        let idx += 1
-    endwhile
-
-    if idx == strlen(s:all_marks)
-        let chr = strpart(s:all_marks, 0, 1)
-    endif
-
+    let chr = tolower(strpart(bgColor_tui, 0, 1))
     exec "normal m".chr
 endfunction
 
 func! <SID>HighlightClear()
+    exec 'delmarks!'
+
     let bnum = bufnr('%')
     if !has_key(s:markLines, bnum)
         return
