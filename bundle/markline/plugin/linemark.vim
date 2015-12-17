@@ -5,77 +5,81 @@ if exists("g:loaded_linemark")
 endif
 let g:loaded_linemark = 1
 
-nnoremap  <silent> mm :call <SID>HighlightLine('index') \| nohls<CR>
-nnoremap  <silent> mq :call <SID>HighlightClear()<CR>
+nnoremap  <silent> mm :call <SID>HighlightLine() \| nohls<CR>
+nnoremap  <silent> mc :call <SID>HighlightClear()<CR>
 nnoremap  <silent> 'n :call <SID>HighlightGoto('f')<CR>
 nnoremap  <silent> 'p :call <SID>HighlightGoto('b')<CR>
 nnoremap  <silent> m<space> :call <SID>HighlightShow("all")<CR>
 
-let s:lcolor_bg_tui = ["Blue", "Green","Cyan", "Red",  "Yellow","Magenta","LightGray"]
-let s:lcolor_fg_tui = ["White","White","White","White","White", "White",  "Black"]
-let s:markLines = {}
-let s:lcolor_grp = "LHiColor"
-let s:lcolor_max = min([len(s:lcolor_bg_tui), len(s:lcolor_fg_tui)])
+let s:bg = ["Blue", "Green","Cyan", "Red",  "Yellow","Magenta","White"]
+let s:fg = ["White","White","White","White","White", "White",  "Black"]
+let s:buf = {}
+let s:grp = "HILI"
+let s:max = 7
 
-function! <SID>HighlightLine(cmode)
+func! <SID>HighlightLine()
     let bnum = bufnr('%')
     let lnum = line(".")
-    let colorgrp = s:lcolor_grp. '_'. bnum. '_'. lnum
-    let linePattern = '.*\%'. lnum. 'l.*'
+    let grp = s:grp. '_'. bnum. '_'. lnum
 
-    if !has_key(s:markLines, bnum)
-        call extend(s:markLines, {bnum : []})
+    if !has_key(s:buf, bnum)
+        call extend(s:buf, {bnum : []})
     endif
 
-    let idx = index(s:markLines[bnum], lnum)
+    let idx = index(s:buf[bnum], lnum)
     if idx >= 0
-        exec 'syn clear '. colorgrp
-        call remove(s:markLines[bnum], idx)
+        exec 'syn clear '.grp
+        call remove(s:buf[bnum], idx)
+
+        let bg = s:bg[idx % s:max]
+        let ch = strpart(bg, 0, 1)
+        exec "delmarks ".ch
+
         return
     endif
 
-    call add(s:markLines[bnum], lnum)
+    call add(s:buf[bnum], lnum)
 
-    if a:cmode ==? 'index'
-        let idx = index(s:markLines[bnum], lnum)
-        let bgColor_tui = s:lcolor_bg_tui[idx % s:lcolor_max]
-        let fgColor_tui = s:lcolor_fg_tui[idx % s:lcolor_max]
-    else
-        " hili by line no.
-        let bgColor_tui = s:lcolor_bg_tui[lnum % s:lcolor_max]
-        let fgColor_tui = s:lcolor_fg_tui[lnum % s:lcolor_max]
-    endif
+    let idx = index(s:buf[bnum], lnum)
+    let bg  = s:bg[idx % s:max]
+    let fg  = s:fg[idx % s:max]
+    let pat = '/\%'. lnum. 'l.*/'
 
-    exec 'hi '. colorgrp. ' ctermfg='. fgColor_tui. ' ctermbg='. bgColor_tui
-    exec 'syn match '. colorgrp. ' "'. linePattern. '" containedin=ALL'
+    exec 'hi '.grp.' ctermfg='.fg.' ctermbg='.bg
+    exec 'syn match '.grp.' '.pat.' containedin=ALL'
 
-    let chr = tolower(strpart(bgColor_tui, 0, 1))
-    exec "normal m".chr
-endfunction
+    let ch = strpart(bg, 0, 1)
+    exec "normal m".ch
+endfunc
 
 func! <SID>HighlightClear()
-    exec 'delmarks!'
-
     let bnum = bufnr('%')
-    if !has_key(s:markLines, bnum)
+    if !has_key(s:buf, bnum)
         return
     endif
 
-    for lnum in s:markLines[bnum]
-        let colorgrp = s:lcolor_grp. '_'. bnum. '_'. lnum
-        exec 'syn clear '. colorgrp
+    let lines = s:buf[bnum]
+    for idx in range(len(lines))
+        let lnum = lines[idx]
+
+        let grp = s:grp. '_'. bnum. '_'. lnum
+        exec 'syn clear '. grp
+
+        let bg = s:bg[idx % s:max]
+        let ch = strpart(bg, 0, 1)
+        exec 'delmarks '.ch
     endfor
 
-    call remove(s:markLines, bnum)
+    call remove(s:buf, bnum)
 endfunc
 
 func! <SID>HighlightShow(mode)
     let l:bnum = bufnr('%')
-    if !has_key(s:markLines, l:bnum)
+    if !has_key(s:buf, l:bnum)
         return
     endif
 
-    let l:lines = copy(s:markLines[l:bnum])
+    let l:lines = copy(s:buf[l:bnum])
     if len(l:lines) == 0
         return
     endif
@@ -84,12 +88,12 @@ func! <SID>HighlightShow(mode)
     call setqflist(l:list_map)
 
     if a:mode == "all"
-        for b in keys(s:markLines)
+        for b in keys(s:buf)
             if b == l:bnum
                 continue
             endif
 
-            let l:lines = copy(s:markLines[b])
+            let l:lines = copy(s:buf[b])
             let l:list_map = map(l:lines, '{"bufnr" : b, "lnum" : v:val, "text" : getline(v:val)}')
             call setqflist(l:list_map, 'a')
         endfor
@@ -104,11 +108,11 @@ endfunc
 
 func! <SID>HighlightGoto(mode)
     let bnum = bufnr('%')
-    if !has_key(s:markLines, bnum)
+    if !has_key(s:buf, bnum)
         return
     endif
 
-    let lines = copy(s:markLines[bnum])
+    let lines = copy(s:buf[bnum])
     let size = len(lines)
     if size == 0
         return

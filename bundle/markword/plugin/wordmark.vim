@@ -33,7 +33,7 @@ if !hasmapto('<Plug>MarkWord', 'v')
 	vmap <unique> <silent> mw <Plug>MarkSet
 endif
 if !hasmapto('<Plug>MarkClear', 'n')
-	nmap <unique> <silent> mW <Plug>MarkClear
+	nmap <unique> <silent> mq <Plug>MarkClear
 endif
 
 nnoremap <silent> <Plug>MarkSet   :call <sid>MarkCurrentWord()<cr>
