@@ -1,4 +1,4 @@
-*vifm-app.txt*    For Vifm version 0.8  Last change: 2015 Aug 18
+*vifm-app.txt*    For Vifm version 0.8.2  Last change: 2016 Dec 27
 
  Email for bugs and suggestions: <xaizek@openmailbox.org>
 
@@ -9,6 +9,7 @@
 |vifm-view|               View mode keys.
 |vifm-command-line|       Command line mode keys.
 |vifm-command-line-edit|  External editing of command line content.
+|vifm-more|               More mode keys.
 |vifm-commands|           How to use and set :commands.
 |vifm-commands-bg|        Backgrounding of commands.
 |vifm-cancellation|       Cancellation of commands.
@@ -20,8 +21,9 @@
 |vifm-functions|          List of builtin functions with description.
 |vifm-startup|            Determining of environment variables on startup.
 |vifm-configure|          Configuration of vifm.
-|vifm-menus-and-dialogs|  Keys for menus and dialogs.
+|vifm-menus-and-dialogs|  Keys and commands for menus and dialogs.
 |vifm-custom-views|       Differences between regular and custom views.
+|vifm-compare-views|      Kinds, properties and differences of compare views.
 |vifm-view-look|          Gives general overview of view displaying variants.
 |vifm-ls-view|            Some details about ls-like view.
 |vifm-column-view|        Column view configuration details.
@@ -94,23 +96,29 @@ The other command line arguments are:
     sets command to be executed on selected files instead of opening them.
     The command may use any of |vifm-macros|.  The command is executed once for
     whole selection.
---logging                                      *vifm---logging*
-    log some errors to $VIFM/log.
-    Also /var/log/vifm-startup-log (on *nix) and startup-log in the directory
-    of executable (on Windows) is used to log startup process (when
-    configuration directory isn't determined).
+--logging[=<startup log path>]                 *vifm---logging*
+    log some operational details $VIFM/log.  If the optional startup log path
+    is specified and permissions allow to open it for writing, then logging of
+    early initialization (before value of $VIFM is determined) is put there.
+--server-list                                  *vifm---server-list*
+    list available server names and exit.
+--server-name <name>                           *vifm---server-name*
+    name of target or this instance (sequential numbers are appended on name
+    conflict).
 --remote                                       *vifm---remote*
-    sends the rest of command line to the active vifm server (one of already
-    running instances if any).  When there is no server, quits silently.
-    There is no limit on how many arguments can be processed.  One can
-    combine --remote with -c <command> or +<command> to execute command in
-    already running instance of vifm.  See also |vifm-clientserver|.
+    sends the rest of the command line to another instance of vifm.
+    --server-name is treated just like any other argument and should precede
+    --remote on the command line.  When there is no server, quits silently.
+    There is no limit on how many arguments can be processed.  One can combine
+    --remote with -c <command> or +<command> to execute commands in already
+    running instance of vifm.  See also |vifm-clientserver|.
 -c <command>, +<command>                       *vifm--c* *vifm--+c*
     run command-line mode <command> on startup.  Commands in such arguments
     are executed in the order they appear in command line.  Commands with
     spaces or special symbols must be enclosed in double or single quotes or
     all special symbols should be escaped (the exact syntax strongly depends
-    on shell).
+    on shell).  "+" argument is equivalent to "$" and thus picks last item
+    of the view.
 --help, -h                                     *vifm---help* *vifm--h*
     show a brief command summary and exit vifm.
 --version, -v                                  *vifm---version* *vifm--v*
@@ -139,8 +147,8 @@ k, gk or Ctrl-P - move cursor up one line.     *vifm-k* *vifm-gk* *vifm-CTRL-P*
 j, gj or Ctrl-N - move cursor down one line.   *vifm-j* *vifm-gj* *vifm-CTRL-N*
 
 h                                              *vifm-h*
-    when |vifm-'lsview'| is off move up one directory, otherwise move left one
-    file.
+    when |vifm-'lsview'| is off move up one directory (moves to parent
+    directory node in tree view), otherwise move left one file.
 l                                              *vifm-l*
     when |vifm-'lsview'| is off move into a directory or launches a file,
     otherwise move right one file.
@@ -236,14 +244,16 @@ Ctrl-W + - increase size of the view by count. *vifm-CTRL-W_+*
 Ctrl-W < - decrease size of the view by count. *vifm-CTRL-W_<*
 Ctrl-W > - increase size of the view by count. *vifm-CTRL-W_>*
 
-Ctrl-W | - maximize current view.              *vifm-CTRL-W_bar*
-Ctrl-W _ - maximize current view.              *vifm-CTRL-W__*
+Ctrl-W | - set current view size to count.     *vifm-CTRL-W_bar*
+Ctrl-W _ - set current view size to count.     *vifm-CTRL-W__*
 Ctrl-W = - make size of two views equal.       *vifm-CTRL-W_=*
 
-For Ctrl-W +, Ctrl-W -, Ctrl-W < and Ctrl-W > commands count
-can be given before and/or after Ctrl-W.  The resulting count
-is a multiplication of those two.  So "2 Ctrl-W 2 -" decreases
-window size by 4 lines or columns.
+For Ctrl-W +, Ctrl-W -, Ctrl-W <, Ctrl-W >, Ctrl-W | and Ctrl-W _
+commands count can be given before and/or after Ctrl-W.  The
+resulting count is a multiplication of those two.  So
+"2 Ctrl-W 2 -" decreases window size by 4 lines or columns.
+
+Ctrl-W | and Ctrl-W _ maximize current view by default.
 
 Marks~
 
@@ -276,6 +286,11 @@ Searching~
     advance cursor to previous match.
 ?
     perform backward search with top item of search pattern history.
+
+Trailing slash for directories is taken into account, so `/\/` searches for
+directories and symbolic links to directories.  At the moment `//` works too,
+but this can change in the future, so consider escaping the slash if not
+typing pattern by hand.
 
 Matches are automatically selected if |vifm-'hlsearch'| is set.  Enabling
 |vifm-'incsearch'| makes search interactive.  |vifm-'ignorecase'| and
@@ -316,7 +331,8 @@ Filters~
                                                *vifm-filters*
 There are three basic file filters:
  - dot files filter (excluding "." and ".." special directories, which
-   appearance is controlled by the |vifm-'dotdirs'| option)
+   appearance is controlled by the |vifm-'dotdirs'| option), see
+   |vifm-'dotfiles'|
  - manual filter for file names
  - automatic filter for file names
  - local filter for file names (see |vifm-=|)
@@ -339,8 +355,12 @@ zR - remove all filters.                       *vifm-zR*
 zr - remove local filter.                      *vifm-zr*
 
 zd                                             *vifm-zd*
-    exclude selection or current file from custom view.  Does nothing for
-    regular view.
+    exclude selection or current file from a custom view.  Does nothing for
+    regular view.  For tree view excluding directory excludes that sub-tree.
+    For compare views zd hides group of adjacent identical files, count can
+    be specified as 1 to exclude just single file or selected items instead.
+    Files excluded this way are not counted as filtered out and can't be
+    returned unless view is reloaded.
 
 =regular expression                            *vifm-=*
     filter out files that don't match regular expression.  Whether view is
@@ -356,7 +376,7 @@ Files and directories are filtered separately.  For this a slash is appended
 to a directory name before testing whether it matches the filter.  Examples:
 >
  " filter directories which names end with '.files'
- :filter /^.*\.files/$/
+ :filter /^.*\.files\/$/
 
  " filter files which names end with '.d'
  :filter /^.*\.d$/
@@ -413,7 +433,8 @@ Shift-Tab                                      *vifm-SHIFT-Tab*
 
 ga                                             *vifm-ga*
     calculate directory size.  Uses cached directory sizes when possible
-    for better performance.
+    for better performance.  As a special case calculating size of ".." entry
+    results in calculation of size of current directory.
 gA                                             *vifm-gA*
     like ga, but force update.  Ignores old values of directory sizes.
 
@@ -438,8 +459,11 @@ av                                             *vifm-av*
 gv                                             *vifm-gv*
     go to visual mode restoring last selection.
 
-gs                                             *vifm-gs*
-    restore last t selection, like gv for visual mode selection.
+[reg]gs                                        *vifm-gs*
+    when no register is specified, restore last t selection (similar to what
+    gv does for visual mode selection).  If register is present, then all
+    files listed in that register and which are visible in current view are
+    selected.
 
 
 gu<selector>                                   *vifm-gu*
@@ -520,6 +544,20 @@ t - select or unselect (tag) the current file. *vifm-t*
 u - undo last change.                          *vifm-u*
 Ctrl-R - redo last change.                     *vifm-CTRL-R*
 
+dp                                             *vifm-dp*
+    in compare view of "ofboth grouppaths" kind, makes corresponding entry
+    of the other pane equal to the current one.  The semantics is as follows:
+     - nothing done for identical entries
+     - if file is missing in current view, its pair gets removed
+     - if file is missing or differs in other view, it is replaced
+    File removal obeys |vifm-'trash'| option.  When the option is enabled, the
+    operation can be undone/redone (although results won't be visible
+    automatically).
+    Unlike in Vim, this operation is performed on a single line rather than
+    a set of adjacent changes.
+do                                             *vifm-do*
+    same as dp, but applies changes in the opposite direction.
+
 v or V                                         *vifm-v* *vifm-V*
     start visual selection of files, clears current selection.
 
@@ -543,12 +581,57 @@ ZZ - same as |vifm-:quit|.                       *vifm-ZZ*
 
 
 (                                              *vifm-(*
-    goto previous group.  Groups are defined by primary sorting key.
+    go to previous group.  Groups are defined by primary sorting key.
     For name and iname members of each group have same first letter,
     for all other sorting keys vifm uses size, uid, ...
 
 )                                              *vifm-)*
-    goto next group.  See ( key description above.
+    go to next group.  See ( key description above.
+
+
+{                                              *vifm-{*
+    similar to ( key, but always considers whether entry is file or
+    directory and thus speeds up navigation to closest previous entry of
+    the opposite type.
+
+}                                              *vifm-}*
+    same as {, but in forward direction.
+
+
+[c                                             *vifm-[c*
+    go to previous mismatched entry in directory comparison view or do
+    nothing.
+
+]c                                             *vifm-]c*
+    go to next mismatched entry in directory comparison view or do nothing.
+
+
+[d                                             *vifm-[d*
+    go to previous directory entry or do nothing.
+
+]d                                             *vifm-]d*
+    go to next directory entry or do nothing.
+
+
+[s                                             *vifm-[s*
+    go to previous selected entry or do nothing.
+
+]s                                             *vifm-]s*
+    go to next selected entry or do nothing.
+
+
+[z                                             *vifm-[z*
+    go to first sibling of current entry.
+
+]z                                             *vifm-]z*
+    go to last sibling of current entry.
+
+
+zj                                             *vifm-zj*
+    go to next directory sibling of current entry or do nothing.
+
+zk                                             *vifm-zk*
+    go to previous directory sibling of current entry or do nothing.
 
 Using Count~
                                                *vifm-count* *vifm-[count]*
@@ -965,12 +1048,41 @@ to the file are ignored, but the initial value of the first line is saved in
 appropriate history.
 
 --------------------------------------------------------------------------------
+*vifm-more*
+                                               *vifm-pager*
+
+This is the mode that appears when status bar content is so big that it
+doesn't fit on the screen.  One can identify the mode by "-- More --" message
+at the bottom.
+
+The following keys are handled in this mode:
+
+Enter, Ctrl-J, j or Down - scroll one line down.
+Backspace, k or Up - scroll one line up.
+
+d - scroll one page (half of a screen) down.
+u - scroll one page (half of a screen) up.
+
+Space, f or PageDown - scroll down a screen.
+b or PageUp - scroll up a screen.
+
+G - scroll to the bottom.
+g - scroll to the top.
+
+q, Escape or Ctrl-C - quit the mode.
+: - switch to command-line mode.
+
+--------------------------------------------------------------------------------
 *vifm-commands*
 
 vifm-commands are executed with :command_name<Enter>
 
-Commented out lines should start with the double quote symbol, which may be
-preceded by whitespace characters.
+Commented out lines should start with the double quote symbol ("), which may be
+preceded by whitespace characters intermixed with colons.  Inline comments can
+be added at the end of the line after double quote symbol, only last line of a
+multi-line command can contain such comment.  Not all commands support inline
+comments as their syntax conflicts with names of registers and fields where
+double quotes are allowed.
 
 Most of the commands have two forms: complete and the short one.
 Example: >
@@ -990,9 +1102,12 @@ line.  If you want to use '|' in an argument, precede it with '\'.
 These commands see '|' as part of their arguments even when it's escaped:
 
     :[range]!
+    :autocmd
     :cmap
     :cnoremap
     :command
+    :dmap
+    :dnoremap
     :filetype
     :fileviewer
     :filextype
@@ -1062,13 +1177,74 @@ The builtin commands are:
     each next link a corresponding name from the argument list.
 
                                                *vifm-:apropos*
-:apropos manpage
+:apropos keyword...
     create a menu of items returned by the apropos command.  Selecting an item
     in the menu opens corresponding man page.  By default the command relies
     on the external "apropos" utility, which can be customized by altering
     value of the |vifm-'aproposprg'| option.
 :apropos
     repeat last :apropos command.
+
+                                               *vifm-:autocmd* *vifm-:au*
+:au[tocmd] {event} {pat} {cmd}
+    register autocommand for the {event}, which can be:
+      - DirEnter - performed on entering a directory
+    Event name is case insensitive.
+
+    {pat} is a comma-separated list of modified globs patterns, which can
+    contain tilde or environment variables.  All paths use slash ('/') as
+    directory separator.  The pattern can start with a '!', which negates it.
+    Patterns that do not contain slashes are matched against the last item of
+    the path only (e.g. "dir" in "/path/dir").  Literal comma can be entered by
+    doubling it.  Two modifications to globs matching are as follows:
+      - *  - never matches a slash (i.e., can signify single directory level)
+      - ** - matches any character (i.e., can match path of arbitrary depth)
+
+    {cmd} is a :command or several of them separated with '|'.
+
+    Examples of patterns:
+      - `conf.d`      - matches conf.d directory anywhere
+      - `*.d`         - matches directories ending with ".d" anywhere
+      - `**.git`      - matches something.git, but not .git anywhere
+      - `**/.git/**`  - matches /path/.git/objects, but not /path/.git
+      - `**/.git/**/` - matches /path/.git/ only (because of trailing slash)
+      - `/etc/*`      - matches /etc/conf.d/, /etc/X11, but not /etc/X11/fs
+      - `/etc/**/*.d` - matches /etc/conf.d, /etc/X11/conf.d, etc.
+      - `/etc/**/*`   - matches /etc/ itself and any file below it
+      - `/etc/**/**`  - matches /etc/ itself and any file below it
+
+:au[tocmd] [{event}] [{pat}]
+    list those autocommands that match given event-pattern combination.
+    {event} and {pat} can be omitted to list all autocommands.  To list any
+    autocommands for specific pattern one can use * placeholder in place of
+    {event}.
+:au[tocmd]! [{event}] [{pat}]
+    remove autocommands that match given event-pattern combination.  Syntax
+    is the same as for listing above.
+
+                                               *vifm-:bmark*
+:bmark tag1 [tag2 [tag3...]]
+    bookmark current directory with specified tags.
+:bmark! path tag1 [tag2 [tag3...]]
+    same as :bmark, but allows bookmarking specific path instead of current
+    directory.  This is for use in vifmrc and for bookmarking files.
+
+    Path can contain macros that expand to single path (%c, %C, %d, %D) or
+    those that can expand to multiple paths, but contain only one (%f, %F,
+    %rx).  The latter is done for convenience on using the command
+    interactively.  Complex macros that include spaces (e.g. "%c:gs/ /_")
+    should be escaped.
+
+                                               *vifm-:bmarks*
+:bmarks
+    display all bookmarks in a menu.
+:bmarks [tag1 [tag2...]]
+    display menu of bookmarks that include all of the specified tags.
+
+                                               *vifm-:bmgo*
+:bmgo [tag1 [tag2...]]
+    when there are more than one match acts exactly like :bmarks, otherwise
+    navigates to single match immediately (and fails if there is no match).
 
                                                *vifm-:cabbrev* *vifm-:ca*
 :ca[bbrev]
@@ -1188,6 +1364,18 @@ The builtin commands are:
 <    equals >
       :%copy
 <
+                                               *vifm-:compare*
+:compare [byname | bysize | bycontents | listall | listunique | listdups |
+          ofboth | ofone | groupids | grouppaths | skipempty]...
+    compare files in one or two views according the arguments.  The default
+    is "bycontents listall ofboth grouppaths".  See |vifm-compare-views| for
+    details.  Tree structure is incompatible with ls-like view, so value of
+    |vifm-'lsview'| option is ignored.
+
+:cope[n]                                       *vifm-:copen* *vifm-:cope*
+    opens menu with contents of the last displayed menu with navigation to
+    files by default, if any.
+
                                                *vifm-:copy* *vifm-:co*
 :[range]co[py][!?][ &]
     copy files to directory of other view.  With "?" prompts for destination
@@ -1210,15 +1398,25 @@ The builtin commands are:
     unregister command-line mode abbreviation by its rhs, so that abbreviation
     could be removed even after expansion.
 
+                                               *vifm-:delbmarks*
+:delbmarks
+    remove bookmarks from current directory.
+:delbmarks tag1 [tag2 [tag3...]]
+    remove set of bookmarks that include all of the specified tags.
+:delbmarks!
+    remove all bookmarks.
+:delbmarks! path1 [path2 [path3...]]
+    remove bookmarks of listed paths.
+
+:delc[ommand] user_command                     *vifm-:delcommand* *vifm-:delc*
+    remove user defined command named user_command.
+
                                                *vifm-:delete* *vifm-:d*
 :[range]d[elete][!] [reg] [count]
     delete selected or [count] files into [reg] (" by default).  "!" means
     complete removal (omitting trash).
 :[range]d[elete][!] [count] &
     delete [count] files in background.  "!" means complete removal.
-
-:delc[ommand] user_command                     *vifm-:delcommand* *vifm-:delc*
-    remove user defined command named user_command.
 
                                                *vifm-:delmarks* *vifm-:delm*
 :delm[arks]!
@@ -1241,12 +1439,17 @@ The builtin commands are:
     space.  See |vifm-:let| for definition of <expr>.
 
 :[range]e[dit] [file...]                       *vifm-:edit* *vifm-:e*
-    open selected or passed file(s) in editor.  Accepts macros.
+    open selected or passed file(s) in editor.  Macros and environment
+    variables are expanded.
 
 :el[se]                                        *vifm-:else* *vifm-:el*
-    execute commands until next matching |vifm-:endif| if they previously
-    were not being executed.  See also |vifm-:if| and
-    |vifm-commands-and-selection|.
+    execute commands until next matching |vifm-:endif| if all other conditions
+    didn't match.  See also |vifm-:if| and |vifm-commands-and-selection|.
+
+:elsei[f] {expr1}                              *vifm-:elseif* *vifm-:elsei*
+    execute commands until next matching |vifm-:elseif|, |vifm-:else| or
+    |vifm-:endif| if conditions of previous :if and :elseif branches were
+    evaluated to zero.  See also |vifm-:if| and |vifm-commands-and-selection|.
 
 :empty                                         *vifm-:empty*
     permanently remove files from all existing non-empty trash directories (see
@@ -1264,7 +1467,7 @@ The builtin commands are:
     command.  See |vifm-:let| for definition of <expr>.
 
 :exi[t][!]                                     *vifm-:exit* *vifm-:exi*
-    same as :quit.
+    same as |vifm-:quit|.
 
                                                *vifm-:file* *vifm-:f*
 :f[ile][ &]
@@ -1275,7 +1478,7 @@ The builtin commands are:
     forces running associated program in background.
 
                                                *vifm-:filetype* *vifm-:filet*
-:filet[ype] pat1,pat2,... [{ descr }]def_program[ &],[{ descr }]prog2[ &],...
+:filet[ype] pattern-list [{ descr }]def_program[ &],[{ descr }]prog2[ &],...
     associate given program list to each of the patterns.  Associated
     program (command) is used by handlers of l and Enter keys (and also in
     the :file menu).  If you need to insert comma into command just double
@@ -1303,7 +1506,7 @@ The builtin commands are:
     file name.  Same as ":filextype filename".
 
                                                *vifm-:filextype* *vifm-:filex*
-:filex[type] pat1,pat2,... [{ description }] def_program,program2,...
+:filex[type] pattern-list [{ description }] def_program,program2,...
     same as :filetype, but this command is ignored if not running in X.  In
     X :filextype is equal to :filetype.  See |vifm-globs| for pattern
     definition.  See also |vifm-fuse|.
@@ -1354,14 +1557,14 @@ The builtin commands are:
     file name.  Same as ":filetype filename".
 
                                                *vifm-:fileviewer* *vifm-:filev*
-:filev[iewer] pat1,pat2,... command1,command2,...
+:filev[iewer] pattern-list command1,command2,...
     register specified list of commands as viewers for each of the patterns.
-    Viewer is a command which output is captured and displayed in the second
-    pane of vifm after running |vifm-:view| command.  When the command doesn't
-    contain any of vifm macros, name of current file is appended as if command
-    ended with |vifm-%c| macro.  Comma escaping and missing commands processing
-    rules as for |vifm-:filetype| apply to this command.  See |vifm-globs| for
-    pattern definition.
+    Viewer is a command which output is captured and displayed in one of the
+    panes of vifm after pressing |vifm-e| or running |vifm-:view| command.
+    When the command doesn't contain any of vifm macros, name of current file
+    is appended as if command ended with |vifm-%c| macro.  Comma escaping and
+    missing commands processing rules as for |vifm-:filetype| apply to this
+    command.  See |vifm-globs| for pattern definition.
 
     Example for zip archives: >
 
@@ -1473,6 +1676,7 @@ Available group-name values:
  - StatusLine - color of the line above the status bar
  - JobLine - color of job line that appears above the status line
  - WildMenu - color of the wild menu items
+ - SuggestBox - color of key suggestion box
  - CurrLine - line at cursor position in active view
  - OtherLine - line at cursor position in inactive view
  - Selected - color of selected files
@@ -1483,6 +1687,7 @@ Available group-name values:
  - Device - color of block and character devices
  - Executable - color of executable files
  - Fifo - color of fifo pipes
+ - CmpMismatch - color of mismatched files in side-by-side comparison by paths
 
 Available colors:
  - -1 or default or none - transparent
@@ -1613,6 +1818,7 @@ command.
 Here is the hierarchy of highlight groups, which you need to know for using
 transparency:
   JobLine
+  SuggestBox
   StatusLine
     WildMenu
   Border
@@ -1656,12 +1862,15 @@ important in certain cases.
 
 :if {expr1}                                    *vifm-:if*
     start conditional block.  Commands are executed until next matching
-    |vifm-:else| or |vifm-:endif| command if {expr1} evaluates to non-zero,
-    otherwise they are ignored.  See also |vifm-commands-and-selection|.
+    |vifm-:elseif|, |vifm-:else| or |vifm-:endif| command if {expr1} evaluates
+    to non-zero, otherwise they are ignored.  See also
+    |vifm-commands-and-selection|.
 
     Example: >
-      if $TERM == "screen.linux"
+      if $TERM == 'screen.linux'
           highlight CurrLine ctermfg=lightwhite ctermbg=lightblack
+      elseif $TERM == 'tmux'
+          highlight CurrLine cterm=reverse ctermfg=black ctermbg=white
       else
           highlight CurrLine cterm=bold,reverse ctermfg=black ctermbg=white
       endif
@@ -1687,6 +1896,14 @@ important in certain cases.
     string on Windows removes it.
 :let $ENV_VAR .= <expr>
     append value to environment variable.
+:let &[l:|g:]opt = <expr>
+    sets option value.
+:let &[l:|g:]opt .= <expr>
+    append value to string option.
+:let &[l:|g:]opt += <expr>
+    increasing option value, adding sub-values.
+:let &[l:|g:]opt -= <expr>
+    decreasing option value, removing sub-values.
 
 Where <expr> could be a single-quoted string, double-quoted string, an
 environment variable, function call or a concatanation of any of them in any
@@ -1719,15 +1936,16 @@ order using the '.' operator.  Any whitespace is ignored.
 
                                                *vifm-:marks*
 :marks
-    display menu of all bookmarks.
+    display menu of all marks.
 :marks list ...
     display the contents of the marks that are mentioned in list.
 
 :mes[sages]                                    *vifm-:messages* *vifm-:mes*
     display previously given status bar messages (up to 50).
 
-:mkdir[!] dir...                               *vifm-:mkdir*
-    creates directories with given names.  "!" means make parent directories
+:[line]mkdir[!] dir...                         *vifm-:mkdir*
+    create directories at specified paths.  The [line] can be used to pick
+    node in a tree-view.  "!" means make parent directories
     as needed.  Macros are expanded.
 
                                                *vifm-:move* *vifm-:m*
@@ -1761,6 +1979,13 @@ order using the '.' operator.  Any whitespace is ignored.
     add pane directories to stack and process arguments like :cd command.
 :pushd
     exchange top two items of the directory stack.
+
+:[line]pu[t][!] [reg] [ &]                           *vifm-:put* *vifm-:pu*
+    puts files from specified register (" by default) into current directory.
+    The [line] can be used to pick node in a tree-view.  "!" moves files
+    from their original location instead of copying them.  During this
+    operation no confirmation dialogs will be shown, all checks are performed
+    beforehand.
 
 :pw[d]                                         *vifm-:pwd* *vifm-:pw*
     display the present working directory.
@@ -1818,11 +2043,29 @@ order using the '.' operator.  Any whitespace is ignored.
     multiplexer window for each new file edited or program launched from vifm.
     This requires screen version 3.9.9 or newer for the screen -X argument or
     tmux (1.8 version or newer is recommended).
+:screen!
+    enable integration with terminal multiplexers.
 :screen?
     display whether integration with terminal multiplexers is enabled.
 
 Note: the command is called screen for historical reasons (when tmux wasn't
 yet supported) and might be changed in future releases, or get an alias.
+
+                                               *vifm-:select*
+:[range]select
+    select files in the given range (current file if no range is given).
+:select {pattern}
+    select files that match specified pattern.  Possible {pattern} forms are
+    described in |vifm-patterns|.  Trailing slash for directories is taken
+    into account, so `:select! */ | invert s` selects only files.
+:select //[iI]
+    same as item above, but reuses last search pattern.
+:select !{external command}
+    select files from the list supplied by external command.  Files are
+    matched by full paths, relative paths are converted to absolute ones
+    beforehand.
+:[range]select! [{pattern}|!{external command}]
+    same as above, but resets previously selected items before proceeding.
 
                                                *vifm-:set* *vifm-:se*
 :se[t]
@@ -1835,7 +2078,7 @@ yet supported) and might be changed in future releases, or get an alias.
      - for all options - option, option? and option&
      - for boolean options - nooption, invoption and option!
      - for integer options - option=x, option+=x and option-=x
-     - for string options - option=x
+     - for string options - option=x and option+=x
      - for string list options - option=x, option+=x and option-=x
      - for enumeration options - option=x, option+=x and option-=x
      - for set options - option=x, option+=x and option-=x
@@ -1849,7 +2092,7 @@ yet supported) and might be changed in future releases, or get an alias.
      - option? - print option value
      - option& - reset option to its default value
      - option=x or option:x - set option to x
-     - option+=x - add x to option
+     - option+=x - add/append x to option
      - option-=x - remove (or subtract) x from option
      - option^=x - toggle x presence among values of the option
 
@@ -1877,7 +2120,9 @@ yet supported) and might be changed in future releases, or get an alias.
 
 :sh[ell][!]                                    *vifm-:shell* *vifm-:sh*
     start a shell in current directory.  "!" suppresses spawning dedicated
-    window of terminal multiplexer for a shell.
+    window of terminal multiplexer for a shell.  To make vifm adaptive to
+    environment it uses $SHELL if it's defined, otherwise |vifm-'shell'|
+    value is used.
 
 :sor[t]                                        *vifm-:sort* *vifm-:sor*
     display dialog with different sorting methods, where one can select
@@ -1922,19 +2167,23 @@ yet supported) and might be changed in future releases, or get an alias.
     relative to the current directory.  Using of macros is allowed.
 :sync!
     change the other pane to the current pane directory and synchronize
-    cursor position.
-:sync! [location | cursorpos | localopts | filters | all]...
+    cursor position.  If current pane displays custom list of files, position
+    before entering it is used (current one might not make any sense).
+:sync! [location | cursorpos | localopts | filters | filelist | tree | all]...
     change enumerated properties of the other pane to match corresponding
     properties of the current pane.  Arguments have the following meanings:
      - location - current directory of the pane;
      - cursorpos - cursor position (doesn't make sense without "location");
      - localopts - all local options;
      - filters - all filters;
+     - filelist - list of files for custom view (implies "location");
+     - tree - tree structure for tree view (implies "location");
      - all - all of the above.
 
-:touch file...                                 *vifm-:touch*
-    create file(s).  Aborts on errors.  Doesn't update time of existing
-    files.  Macros are expanded.
+:[line]touch file...                           *vifm-:touch*
+    create files at specified paths.  Aborts on errors.  Doesn't update time
+    of existing files.  The [line] can be used to pick node in a tree-view.
+    Macros are expanded.
 
 :[range]tr/pattern/string/                     *vifm-:tr*
     for each file in range transliterate the characters which appear in
@@ -1949,12 +2198,34 @@ yet supported) and might be changed in future releases, or get an alias.
 :trashes?
     same as :trashes, but also displays size of each trash directory.
 
+:tree                                          *vifm-:tree*
+    turn pane into tree view with current directory as a root.  The tree
+    view is implemented on top of a custom view, but is automatically kept in
+    sync with file system state and considers all the filters.  Thus the
+    structure corresponds to what one would see on visiting the directories
+    manually.  Tree structure is incompatible with ls-like view, so value of
+    |vifm-'lsview'| option is ignored.
+
 :undol[ist]                                    *vifm-:undolist* *vifm-:undol*
     display list of latest changes.  Use "!" to see actual commands.
 
 :unl[et][!] $ENV_VAR1 $ENV_VAR2 ...            *vifm-:unlet* *vifm-:unl*
     remove environment variables.  Use "!" to omit displaying of warnings
     about nonexistent variables.
+
+                                               *vifm-:unselect*
+:[range]unselect
+    unselect files in the given range (current file if no range is given).
+:unselect {pattern}
+    unselect files that match specified pattern.  Possible {pattern} forms are
+    described in |vifm-patterns|.  Trailing slash for directories is taken
+    into account, so `:unselect */` unselects directories.
+:unselect !{external command}
+    unselect files from the list supplied by external command.  Files are
+    matched by full paths, relative paths are converted to absolute ones
+    beforehand.
+:unselect //[iI]
+    same as item above, but reuses last search pattern.
 
 :ve[rsion]                                     *vifm-:version* *vifm-:ve*
     display menu with version information.
@@ -2017,17 +2288,20 @@ yet supported) and might be changed in future releases, or get an alias.
     map lhs key sequence to rhs in command line mode.
 
                                                *vifm-:cmap* *vifm-:cm*
+                                               *vifm-:dmap* *vifm-:dm*
                                                *vifm-:mmap* *vifm-:mm*
                                                *vifm-:nmap* *vifm-:nm*
                                                *vifm-:qmap* *vifm-:qm*
                                                *vifm-:vmap* *vifm-:vm*
 :cm[ap] lhs rhs - map lhs to rhs in command line mode.
+:dm[ap] lhs rhs - map lhs to rhs in dialog modes.
 :mm[ap] lhs rhs - map lhs to rhs in menu mode.
 :nm[ap] lhs rhs - map lhs to rhs in normal mode.
 :qm[ap] lhs rhs - map lhs to rhs in view mode.
 :vm[ap] lhs rhs - map lhs to rhs in visual mode.
 
 :cm[ap] - list all maps of command line mode.
+:dm[ap] - list all maps of dialog modes.
 :mm[ap] - list all maps of menu mode.
 :nm[ap] - list all maps of normal mode.
 :qm[ap] - list all maps of view mode.
@@ -2035,6 +2309,8 @@ yet supported) and might be changed in future releases, or get an alias.
 
 :cm[ap] beginning
     list all maps of command line mode that start with the beginning.
+:dm[ap] beginning
+    list all maps of dialog modes that start with the beginning.
 :mm[ap] beginning
     list all maps of menu mode that start with the beginning.
 :nm[ap] beginning
@@ -2053,12 +2329,16 @@ yet supported) and might be changed in future releases, or get an alias.
     mapping of rhs.
 
                                                *vifm-:cnoremap* *vifm-:cno*
+                                               *vifm-:dnoremap* *vifm-:dn*
                                                *vifm-:mnoremap* *vifm-:mn*
                                                *vifm-:nnoremap* *vifm-:nn*
                                                *vifm-:qnoremap* *vifm-:qn*
                                                *vifm-:vnoremap* *vifm-:vn*
 :cno[remap] lhs rhs
     map the key sequence lhs to rhs for command line mode, but disallow
+    mapping of rhs.
+:dn[oremap] lhs rhs
+    map the key sequence lhs to rhs for dialog modes, but disallow
     mapping of rhs.
 :mn[oremap] lhs rhs
     map the key sequence lhs to rhs for menu mode, but disallow mapping
@@ -2080,11 +2360,13 @@ yet supported) and might be changed in future releases, or get an alias.
     remove the mapping of lhs from command line mode.
 
                                                *vifm-:cunmap* *vifm-:cu*
+                                               *vifm-:dunmap* *vifm-:du*
                                                *vifm-:munmap* *vifm-:mu*
                                                *vifm-:nunmap* *vifm-:nun*
                                                *vifm-:qunmap* *vifm-:qun*
                                                *vifm-:vunmap* *vifm-:vu*
 :cu[nmap] lhs - remove the mapping of lhs from command line mode.
+:du[nmap] lhs - remove the mapping of lhs from dialog modes.
 :mu[nmap] lhs - remove the mapping of lhs from menu mode.
 :nun[map] lhs - remove the mapping of lhs from normal mode.
 :qun[map] lhs - remove the mapping of lhs from view mode.
@@ -2146,8 +2428,17 @@ The command macros may be used in user commands.
                                                                *vifm-%U*
   %U        same as %u, but implies less list updates inside vifm, which is
             absence of sorting at the moment.
+                                                               *vifm-%Iu*
+  %Iu       same as %u, but gives up terminal before running external
+            %command.
+                                                               *vifm-%IU*
+  %IU       same as %U, but gives up terminal before running external
+            %command.
                                                                *vifm-%S*
   %S        show command output in the status bar.
+                                                               *vifm-%q*
+  %q        redirect command output to quick view, which is activated if
+            disabled.
                                                                *vifm-%s*
   %s        execute command in split window of active terminal
             multiplexer (ignored if not running inside one).
@@ -2301,25 +2592,43 @@ Each of this operations can be cancelled: |vifm-:apropos|, |vifm-:find|,
 --------------------------------------------------------------------------------
 *vifm-patterns*
 
-|vifm-:highlight|, |vifm-:filetype|, |vifm-:filextype| and |vifm-:fileviewer| commands
-support both globs and regular expressions as patterns to match file names or
-full paths.
+|vifm-:highlight|, |vifm-:filetype|, |vifm-:filextype|, |vifm-:fileviewer|
+commands and |vifm-'classify'| option support globs, regular expressions and
+mime types to match file names or their paths.
 
-There are five possible ways to write them:
- 1. {comma-seperated-name-globs}
- 2. {{comma-seperated-path-globs}}
- 3. /name-regular-expression/[iI]
- 4. //path-regular-expression//[iI]
- 5. undecorated-pattern
+There are six possible ways to write a single pattern:
+ 1. [!]{comma-separated-name-globs}
+ 2. [!]{{comma-separated-path-globs}}
+ 3. [!]/name-regular-expression/[iI]
+ 4. [!]//path-regular-expression//[iI]
+ 5. [!]<comma-separated-mime-type-globs>
+ 6. undecorated-pattern
 
-The last form is implicitly refers to one of others.  |vifm-:highlight| does not
-accept undecorated form, while |vifm-:filetype|, |vifm-:filextype| and
-|vifm-:fileviewer| treat it as list of name globals.
+To combine several patterns (AND them), make sure you're using of the first
+five forms and write patterns one after another, like this: >
+ <text/plain>{*.vifm}
+Mind that if you make a mistake the whole string will be treated as the sixth
+form.
+
+|vifm-:filetype|, |vifm-:filextype| and |vifm-:fileviewer| commands accept
+comma-separated list of patterns instead of a single pattern, thus effectively
+handling OR operation on them: >
+ <text/plain>{*.vifm},<application/pdf>{*.pdf}
+
+Five first forms can include leading exclamation mark that negates pattern
+matching.
+
+The last form is implicitly refers to one of the others.  |vifm-:highlight|
+does not accept undecorated form, while |vifm-:filetype|, |vifm-:filextype|,
+|vifm-:fileviewer| and |vifm-'classify'| treat it as list of name globs.
 
 Regular expression patterns are case insensitive by default.
 
 |vifm-globs| section provides short overview of globs and some important points
 that one needs to know about them.
+
+Mime type matching is essentially globs matching applied to mime type of a file
+instead of its name/path.  Note: mime types aren't detected on Windows.
 
 --------------------------------------------------------------------------------
 *vifm-globs*
@@ -2400,8 +2709,27 @@ When disabled vifm will set cursor to the first line in the view after :cd and
 make vifm clear information about cursor position in the view history on :cd
 and :pushd commands (and on startup if 'autochpos' is disabled in the vifmrc).
 l key in the ":history ." and ":trashes" menus is treated like :cd command.
-This option also affects bookmarks so that navigating to a bookmark doesn't
-restore cursor position.
+This option also affects marks so that navigating to a mark doesn't restore
+cursor position.
+
+                                               *vifm-'caseoptions'*
+caseoptions
+type: charset
+default: ""
+
+This option gives additional control over case sensitivity by allowing
+overriding default behaviour to either always be case sensitive or
+always be case insensitive.  Possible values form pairs of lower and upper
+case letters that configure specific aspect of behaviour:
+  p - always ignore case of paths during completion.
+  P - always match case of paths during completion.
+  g - always ignore case of characters for f/F/;/,.
+  G - always match case of characters for f/F/;/,.
+
+At most one item of each pair takes affect, if both or more are present, only
+the last one matters.  When of none pair's elements are present, the behaviour
+is default (depends on operating system for path completion and on values of
+|vifm-'ignorecase'| and |vifm-'smartcase'| options for file navigation).
 
                                                *vifm-'cdpath'* *vifm-'cd'*
 cdpath cd
@@ -2432,15 +2760,24 @@ classify
 type: string list
 default: ":dir:/"
 
-Specifies file name prefixes and suffixes depending on file types.  The format
-is: [{prefix}]:{filetype}:[{suffix}].  Either {prefix} or {suffix} or both of
-them can be omitted (which is the default for all unspecified file types),
-this means empty {prefix} and/or {suffix}.  {prefix} and {suffix} should
-consist exactly of one character. Elements are separated by commas.  Neither
-prefixes nor suffixes are part of file names, so they don't affect commands
-which operate on file names in any way. Comma (',') character should not be
-used.  List of file type names can be found in the description of
-|vifm-filetype()| function.
+Specifies file name prefixes and suffixes depending on file type or name.
+The format is either of:
+  - [{prefix}]:{filetype}:[{suffix}]
+  - [{prefix}]::{pattern}::[{suffix}]
+Possible {pattern} forms are described in |vifm-patterns|.
+
+Priority rules:
+  - file name patterns have priority over type patterns
+  - file name patterns are matched in left-to-right order of their appearance
+    in this option
+
+Either {prefix} or {suffix} or both can be omitted (which is the default for
+all unspecified file types), this means empty {prefix} and/or {suffix}.
+{prefix} and {suffix} should consist of at most eight characters.  Elements
+are separated by commas.  Neither prefixes nor suffixes are part of file names,
+so they don't affect commands which operate on file names in any way.  Comma
+(',') character can be inserted by doubling it.  List of file type names can be
+found in the description of |vifm-filetype()| function.
 
                                                *vifm-'columns'* *vifm-'co'*
 columns co
@@ -2451,11 +2788,13 @@ Terminal width in characters.
 
                                                *vifm-'confirm'* *vifm-'cf'*
 confirm cf
-type: boolean
-default: true
+type: set
+default: delete,permdelete
 
-Ask about permanent deletion of files (on D or :delete! command or on
-undo/redo operation).
+Defines which operations require confirmation:
+ - delete     - moving files to trash (on |vifm-d| or |vifm-:delete|);
+ - permdelete - permanent deletion of files (on |vifm-D| or :delete!
+                command or on undo/redo operation).
 
                                                *vifm-'cpoptions'* *vifm-'cpo'*
 cpoptions cpo
@@ -2476,6 +2815,40 @@ s - when included, |vifm-yy|, |vifm-dd| and |vifm-DD| normal mode commands act o
 t - when included, <tab> (thus <c-i>) behave as <space> and switch active
     pane, otherwise <c-i> goes forward in the view history.
 
+                                               *vifm-'cvoptions'*
+cvoptions
+type: set
+default:
+
+Specifies whether entering/leaving custom views triggers events that normally
+happen on entering/leaving directories:
+ - autocmds    - trigger autocommands on entering/leaving custom views;
+ - localopts   - reset local options on entering/leaving custom views;
+ - localfilter - reset local filter on entering/leaving custom views.
+
+                                               *vifm-'deleteprg'*
+deleteprg
+type: string
+default: ""
+
+Specifies program to run on files that are permanently removed.  When empty,
+files are removed as usual, otherwise this command is invoked on each file by
+appending its name.  If the command doesn't remove files, they will remain on
+the file system.
+
+                                               *vifm-'dirsize'*
+dirsize
+type: enumeration
+default: size
+
+Controls how size of directories is displayed in file views.  The following
+values are possible:
+ - size   - size of directory (i.e., size used to store list of files)
+ - nitems - number of entries in the directory (excluding . and ..)
+
+Size obtained via ga/gA overwrites this setting so seeing count of files and
+occasionally size of directories is possible.
+
                                                *vifm-'dotdirs'*
 dotdirs
 type: set
@@ -2484,8 +2857,16 @@ default: nonrootparent
 Controls displaying of dot directories.  The following values are possible:
  - rootparent    - show "../" in root directory of file system
  - nonrootparent - show "../" in non-root directories of file system
+
 Note that empty directories always contain "../" entry regardless of value of
 this option.  "../" disappears at the moment at least one file is created.
+
+                                               *vifm-'dotfiles'*
+dotfiles
+type: boolean
+default: false
+
+Whether dot files are shown in the view.  Can be controlled with z* bindings.
 
                                                *vifm-'fastrun'*
 fastrun
@@ -2533,6 +2914,9 @@ otherwise %a gets an escaped version of arguments, prepended by "-name"
 be escaped and %A is never escaped.  %A is to be used mainly on Windows, where
 shell escaping is a mess and can break command execution.
 
+Optional %u or %U macro could be used (if both specified %U is chosen) to
+force redirection to custom or unsorted custom view respectively.
+
 Starting from Windows Server 2003 a where command is available, one can
 configure vifm to use it in the following way: >
 
@@ -2551,12 +2935,14 @@ followlinks
 type: boolean
 default: true
 
-Follow links on l or Enter.
+Follow links on l or Enter.  That is navigate to destination file instead of
+treating the link as if it were target file.  Doesn't affects links to
+directories, which are always entered (use |vifm-gf| for directories).
 
                                                *vifm-'fusehome'*
 fusehome
 type: string
-default: "($TMPDIR | $TEMP | $TEMPDIR | $TMP)/vifm_FUSE/"
+default: "($XDG_DATA_HOME/.local/share | $VIFM)/fuse/"
 
 Directory to be used as a root dir for FUSE mounts.  Value of the option can
 contain environment variables (in form "$envname"), which will be expanded
@@ -2589,6 +2975,9 @@ used, they will be implicitly added after a space to the value of the
 |vifm-'grepprg'| option in the following order: %i, %a, %s.  Note that when
 neither %a nor %A are specified, it's %a which is added implicitly.
 
+Optional %u or %U macro could be used (if both specified %U is chosen) to
+force redirection to custom or unsorted custom view respectively.
+
 See |vifm-'findprg'| for description of difference between %a and %A.
 
 Example of setup to use ack (http://beyondgrep.com/) instead of grep:
@@ -2604,8 +2993,7 @@ history hi
 type: integer
 default: 15
 
-Maximum number of directories in the view history and lines in the prompt,
-command line and search histories.
+Maximum number of stored items in all histories.
 
                                                *vifm-'hlsearch'* *vifm-'hls'*
 hlsearch hls
@@ -2638,6 +3026,15 @@ When this option is set, search and view update for local filter is be
 performed starting from initial cursor position each time search pattern is
 changed.
 
+                                               *vifm-'iooptions'*
+iooptions
+type: set
+default:
+
+Controls details of file operations.  The following values are available:
+ - fastfilecloning - perform fast file cloning (copy-on-write), when available
+                     (available on Linux and btrfs file system).
+
                                                *vifm-'laststatus'* *vifm-'ls'*
 laststatus ls
 type: boolean
@@ -2664,6 +3061,9 @@ option should include the %a macro to specify placement of arguments passed
 to the |vifm-:locate| command.  If the macro is not used, it will be
 implicitly added after a space to the value of this option.
 
+Optional %u or %U macro could be used (if both specified %U is chosen) to
+force redirection to custom or unsorted custom view respectively.
+
                                                *vifm-'mintimeoutlen'*
 mintimeoutlen
 type: integer
@@ -2679,7 +3079,7 @@ higher this value is, the less is CPU load in idle mode.
 lsview
 type: boolean
 default: false
-local
+scope: local
 
 When this option is set, directory view will be displayed in multiple
 columns with file names similar to output of `ls -x` command.  See also
@@ -2689,7 +3089,7 @@ columns with file names similar to output of `ls -x` command.  See also
 number nu
 type: boolean
 default: false
-local
+scope: local
 
 Print line number in front of each file name when |vifm-'lsview'| option is
 turned off.  Use |vifm-'numberwidth'| to control width of line number.
@@ -2699,7 +3099,7 @@ Also see |vifm-'relativenumber'|.
 numberwidth nuw
 type: integer
 default: 4
-local
+scope: local
 
 Minimal number of characters for line number field.
 
@@ -2708,7 +3108,7 @@ Minimal number of characters for line number field.
 relativenumber rnu
 type: boolean
 default: false
-local
+scope: local
 
 Print relative line number in front of each file name when |vifm-'lsview'|
 option is turned off.  Use |vifm-'numberwidth'| to control width of line
@@ -2779,7 +3179,8 @@ shell sh
 type: string
 default: $SHELL or "/bin/sh" or "cmd" (on MS-Windows)
 
-Full path to the shell to use to run external commands.
+Full path to the shell to use to run external commands.  On *nix a shell
+argument can be supplied.
 
                                                *vifm-'shortmess'* *vifm-'shm'*
 shortmess shm
@@ -2806,7 +3207,7 @@ Currently this means don't check if directory has changed, skip check if
 target of symbolic links exists, assume that link target located on slow fs
 to be a directory (allows entering directories and navigating to files via
 |vifm-gf|).  If you set the option to "*", it means all the systems are
-considered slow (usefull for cygwin, where all the checks might render vifm
+considered slow (useful for cygwin, where all the checks might render vifm
 very slow if there are network mounts).
 
 Example for autofs root /mnt/autofs: >
@@ -2825,7 +3226,7 @@ is enabled.  It doesn't affect file filtering.
 sort
 type: enumeration
 default: +name on *nix and +iname on Windows
-local
+scope: local
 
 Sets list of sorting keys (first item is primary key, second is secondary
 key, etc.):
@@ -2841,7 +3242,11 @@ key, etc.):
    [+-]perms   - permissions string (*nix only)
    [+-]uid     - owner id (*nix only)
    [+-]uname   - owner name (*nix only)
+   [+-]nlinks  - number of hard links (*nix only)
    [+-]size    - size
+   [+-]nitems  - number of items in a directory (zero for files)
+   [+-]groups  - groups extracted via regexps from |vifm-'sortgroups'|
+   [+-]target  - symbolic link target (empty for other file types)
    [+-]atime   - time accessed (e.g. read, executed)
    [+-]ctime   - time changed (changes in metadata, e.g. mode)
    [+-]mtime   - time modified (when file contents is changed)
@@ -2851,17 +3256,23 @@ information on time keys.
 
 '+' means ascending sort for this key, and '-' means descending sort.
 
-Value of the option is checked to include default sorting key (name on
-*nix, iname on Windows).  When it is absent, the key is appended to the
-value of the option.
-
-Type key is somewhat similar in this regard but it's not added implicitly:
-when "type" is not specified, sorting behaves as if it was the first key in
+"dir" key is somewhat similar in this regard but it's not added implicitly:
+when "dir" is not specified, sorting behaves as if it was the first key in
 the list.  That's why if one wants sorting algorithm to mix directories and
-files, "type" should be appended to sorting option, for example like this: >
- set sort+=type
+files, "dir" should be appended to sorting option, for example like this: >
+ set sort+=dir
 or >
- set sort=-size,type
+ set sort=-size,dir
+
+This option also changes view columns according to primary sorting key set,
+unless |vifm-'viewcolumns'| option is not empty.
+
+Value of the option is checked to include "dir" key and default sorting key
+"(name" on *nix, "iname" on Windows).  Here is what happens if one of them is
+missing:
+ - "dir" key is added at the beginning;
+ - default key is added at the end.
+All other keys are left untouched (at most they are moved).
 
 This option also changes view columns according to primary sorting key set,
 unless |vifm-'viewcolumns'| option is not empty.
@@ -2873,11 +3284,28 @@ default: false
 
 Natural sort of (version) numbers within text.
 
+                                               *vifm-'sortgroups'*
+sortgroups
+type: string
+default: ""
+scope: local
+
+Sets comma-separated list of regular expressions to use for group sorting,
+double comma is literal comma.  Each expression should contain at least one
+group or its value will be considered to be always empty.  Only first match of
+each regular expression is considered.  Groups are considered from right to
+first similar to |vifm-'sort'|, first group divides list of files into
+sub-groups, each of which is sorted by the second group and so on.
+
+Example: >
+ set sortgroups=-(done|todo).*
+this would put files with "-done" in their names above all files with "-todo".
+
                                                *vifm-'sortorder'*
 sortorder
 type: enumeration
 default: ascending
-local
+scope: local
 
 Sets sort order for primary key: ascending, descending.
 
@@ -2889,7 +3317,8 @@ default: ""
 Determines the content of the status line (the line right above command-line).
 Empty string means use same format like in previous versions.  Following macros
 are supported:
-    %t - file name (considering value of the 'classify' option)
+    %t - file name (considering value of the |vifm-'classify'| option)
+    %f - file name relative to current directory (considers 'classify')
     %A - file attributes (permissions on *nix or properties on Windows)
     %u - user name or uid (if it cannot be resolved)
     %g - group name or gid (if it cannot be resolved)
@@ -2898,6 +3327,7 @@ are supported:
          files are selected, except that it will never show size of ../ in
          visual mode, since it cannot be selected
     %d - file modification date (uses |vifm-'timefmt'| option)
+    %z - short tips/tricks/hints that chosen randomly after one minute period
     all |vifm-'rulerformat'| macros
 Percent sign can be followed by optional minimum field width.  Add '-' before
 minimum field width if you want field to be right aligned.
@@ -2917,6 +3347,25 @@ On Windows file properties include next flags (upper case means flag is on):
 Example: >
  set statusline="  %t%= %A %10u:%-7g %15s %20d "
 <
+                                               *vifm-'suggestoptions'*
+suggestoptions
+type: string list
+default:
+
+Controls when, for what and how suggestions are displayed.  The following
+values are available:
+ - normal          - in normal mode;
+ - visual          - in visual mode;
+ - view            - in view mode;
+ - otherpane       - use other pane to display suggestions, when available;
+ - delay[:num]     - display suggestions after a small delay (to do not annoy
+                     if you just want to type a fast shortcut consisting of
+                     multiple keys), num specifies the delay in ms (500 by
+                     default), |vifm-'timeoutlen'| at most;
+ - keys            - include shortcuts (commands and selectors);
+ - marks           - include marks;
+ - registers[:num] - include registers, at most num files (5 by default).
+
                                                *vifm-'syscalls'*
 syscalls
 type: boolean
@@ -2951,7 +3400,11 @@ Use |vifm-trash| directory.
                                                *vifm-'trashdir'*
 trashdir
 type: string
-default: "%r/.vifm-Trash,$VIFM/Trash" or if $VIFM/Trash doesn't exist
+default: on *nix:
+         "%r/.vifm-Trash-%u,$VIFM/Trash,%r/.vifm-Trash" or if $VIFM/Trash
+         doesn't exist
+         "%r/.vifm-Trash-%u,$XDG_DATA_HOME/vifm/Trash,%r/.vifm-Trash"
+         on Windows:
          "%r/.vifm-Trash,$XDG_DATA_HOME/vifm/Trash"
 
 List of trash directory path specifications, separated with commas.
@@ -2960,6 +3413,12 @@ or a path relative to a mount point root, when list element starts with "%r/".
 Value of the option can contain environment variables (of form "$envname"),
 which will be expanded (prepend $ with a slash to prevent expansion).
 Environment variables are expanded when the option is set.
+
+On *nix, if element ends with "%u", the mark is replaced with real user ID and
+permissions are set so that only that only owner is able to use it.
+Note that even this setup is not completely secure when combined with "%r/"
+and it's overall safer to keep files in home directory, but that implies cost
+of copying files between partitions.
 
 When new file gets cut (deleted) vifm traverses each element of the option in
 the order of their appearance and uses first trash directory that it was able
@@ -2978,6 +3437,14 @@ default: 1000
 The time in milliseconds that is waited for a mapped key in case of already
 typed key sequence is ambiguous.  See also |vifm-'mintimeoutlen'|.
 
+                                               *vifm-'title'*
+title
+type: boolean
+default: true when title can be restored, false otherwise
+
+When enabled title of the terminal or terminal multiplexer's window is
+updated according to current location.
+
                                                *vifm-'tuioptions'* *vifm-'to'*
 tuioptions to
 type: charset
@@ -2985,8 +3452,10 @@ default: "ps"
 
 Each flag configures some aspect of TUI appearance.  The flags are:
                                                *vifm-to-p*
-p - when included, file list inside a pane gets additional single character
-padding on left and right sides.
+p - when included:
+  * file list inside a pane gets additional single character padding on left
+    and right sides;
+  * quick view and view mode get single character padding.
                                                *vifm-to-s*
 s - when included, left and right borders (side borders, hence "s" character)
 are visible.
@@ -3012,13 +3481,13 @@ whether it's preceded by space or not) means backgrounding of command.
 viewcolumns
 type: string
 default: ""
-local
+scope: local
 
 Format string containing list of columns in the view. When this option is
 empty view columns to show are chosen automatically using sorting keys
 (see |vifm-'sort'|) as a base.  Value of this option is ignored if
 |vifm-'lsview'| is set.  See |vifm-column-view| for format description.
-An example of setting the options for both panes (note |vifm-windo|
+An example of setting the options for both panes (note |vifm-:windo|
 command): >
     windo set viewcolumns=-{name}..,6{size},11{perms}
 <
@@ -3033,11 +3502,12 @@ whether it's preceded by space or not) means backgrounding of command.
                                                *vifm-'vifminfo'*
 vifminfo
 type: set
-default: bookmarks
+default: bookmarks,bmarks
 
 Controls what will be saved in the $VIFM/vifminfo file:
 
-   bookmarks - bookmarks, except special ones like '< and '>
+   bmarks    - named bookmarks
+   bookmarks - marks (name is obsolete), except special ones like '< and '>
    tui       - state of the user interface (sorting, number of windows, quick
                view state, active view)
    dhistory  - directory history
@@ -3070,6 +3540,15 @@ default: false
 
 Controls whether possible matches of completion will be shown above the
 command line.
+
+                                               *vifm-'wildstyle'*
+wildstyle
+type: enumeration
+default: bar
+
+Picks presentation style of wild menu.  Possible values:
+ - bar   - one-line with left-to-right cursor
+ - popup - multi-line with top-to-bottom cursor
 
                                                *vifm-'wordchars'*
 wordchars
@@ -3183,33 +3662,62 @@ Supported expressions is a subset of what VimL provides.
 
 Expression syntax summary, from least to most significant:
 
-|vifm-expr1| expr2 == expr2          equal
-           expr2 != expr2          not equal
-           expr2 >  expr2          greater than
-           expr2 >= expr2          greater than or equal
-           expr2 <  expr2          smaller than
-           expr2 <= expr2          smaller than or equal
+|vifm-expr1| expr2 || expr2 ..      logical OR
 
-|vifm-expr2| expr3 . expr3 ..        string concatenation
+|vifm-expr2| expr3 && expr3 ..      logical AND
 
-|vifm-expr3| - expr3                 unary minus
-           + expr3                 unary plus
-           ! expr3                 logical NOT
+|vifm-expr3| expr4 == expr4          equal
+           expr4 != expr4          not equal
+           expr4 >  expr4          greater than
+           expr4 >= expr4          greater than or equal
+           expr4 <  expr4          smaller than
+           expr4 <= expr4          smaller than or equal
 
-|vifm-expr4| number                  number constant
+|vifm-expr4| expr5 . expr5 ..        string concatenation
+
+|vifm-expr5| - expr5                 unary minus
+           + expr5                 unary plus
+           ! expr5                 logical NOT
+
+|vifm-expr6| number                  number constant
            "string"                string constant, backslash is special
            'string'                string constant, ' is doubled
            &option                 option value
            $VAR                    environment variable
+           v:var                   builtin variable
            function(expr1, ...)    function call
 
 ".." indicates that the operations in this level can be concatenated.
 
 expr1                                          *vifm-expr1*
 -----
-expr2 {cmp} expr2
+expr2 || expr1
 
-Compare two expr2 expressions, resulting in a 0 if it evaluates to false or 1
+Arguments are converted to numbers before evaluation.
+
+Result is non-zero if at least one of arguments is non-zero.
+
+It's right associative and with short-circuiting, so sub-expressions are
+evaluated from left to right until result of whole expression is determined
+(i.e., until first non-zero) or end of the expression.
+
+expr2                                          *vifm-expr2*
+-----
+expr3 && expr2
+
+Arguments are converted to numbers before evaluation.
+
+Result is non-zero only if both arguments are non-zero.
+
+It's right associative and with short-circuiting, so sub-expressions are
+evaluated from left to right until result of whole expression is determined
+(i.e., until first zero) or end of the expression.
+
+expr3                                          *vifm-expr3*
+-----
+expr4 {cmp} expr4
+
+Compare two expr4 expressions, resulting in a 0 if it evaluates to false or 1
 if it evaluates to true.
 
 equal                   ==                     *vifm-expr-==*
@@ -3231,21 +3739,21 @@ Examples: >
    0  ==  '--1'       == 1
 <
 
-expr2                                          *vifm-expr2*
+expr4                                          *vifm-expr4*
 -----
-expr3 . expr3 ..     string concatenation      *vifm-expr-.*
+expr5 . expr5 ..     string concatenation      *vifm-expr-.*
 
 Examples: >
   'a' . 'b'          == 'ab'
   'aaa' . '' . 'c'   == 'aaac'
 <
 
-expr3                                          *vifm-expr3*
+expr5                                          *vifm-expr5*
 -----
 
-- expr3              unary minus               *vifm-expr-unary--*
-+ expr3              unary plus                *vifm-expr-unary-+*
-! expr3              logical NOT               *vifm-expr-unary-!*
+- expr5              unary minus               *vifm-expr-unary--*
++ expr5              unary plus                *vifm-expr-unary-+*
+! expr5              logical NOT               *vifm-expr-unary-!*
 
 For '-' the sign of the number is changed.
 For '+' the number is unchanged.
@@ -3263,7 +3771,7 @@ These operations can be repeated and mixed.  Examples: >
    !!9               == 1
 <
 
-expr4                                          *vifm-expr4*
+expr6                                          *vifm-expr6*
 -----
 
 number               number constant           *vifm-expr-number*
@@ -3312,7 +3820,9 @@ Examples: >
 
 option                                         *vifm-expr-option*
 ------
-&option               option value
+&option               option value (local one is preferred, if exists)
+&g:option             global option value
+&l:option             local option value
 
 Examples: >
 
@@ -3335,6 +3845,13 @@ Examples: >
   'vifmrc at ' . $MYVIFMRC . ' is used.'
 <
 
+builtin variable                               *vifm-expr-variable*
+--------------------
+v:var                 builtin variable
+
+Information exposed by vifm for use in scripting.  Only |vifm-v:servername| at
+the moment.
+
 function call                                  *vifm-expr-function*
 -------------
 function(expr1, ...)  function call
@@ -3351,14 +3868,24 @@ Examples: >
 
 USAGE               RESULT        DESCRIPTION	~
 
+chooseopt({opt})    String        Queries choose parameters passed on startup.
 executable({expr})  Integer       Checks whether {expr} command available.
 expand({expr})      String        Expands special keywords in {expr}.
 filetype({fnum})    String        Returns file type from position.
+getpanetype()       String        Returns type of current pane.
 has({property})     Integer       Checks whether instance has {property}.
 layoutis({type})    Integer       Checks whether layout is of type {type}.
 paneisat({loc})     Integer       Checks whether current pane is at {loc}.
 system({command})   String        Executes shell command and returns its output.
 
+
+chooseopt({opt})                               *vifm-chooseopt()*
+
+Retrieves values of options related to file choosing.  {opt} can be one of:
+    files      returns argument of |vifm---choose-files| or empty string
+    dir        returns argument of |vifm---choose-dir| or empty string
+    cmd        returns argument of |vifm---on-choose| or empty string
+    delimiter  returns argument of |vifm---delimiter| or the default one ("\n")
 
 executable({expr})                             *vifm-executable()*
 
@@ -3409,6 +3936,14 @@ The result is a string, which represents file type and is one of the list:
 Parameter {fnum} can have following values:
     - '.' to get type of file under the cursor in the active pane
 
+getpanetype()                                  *vifm-getpanetype()*
+
+Retrieves string describing type of current pane.  Possible return values:
+    regular      regular file listing of some directory
+    custom       custom file list (%u)
+    very-custom  very custom file list (%U)
+    tree         tree view
+
 
 has({property})                                *vifm-has()*
 
@@ -3441,7 +3976,7 @@ Any other value yields 0.
 
 Usage example: >
   " automatically split vertically before enabling preview
-  :nnoremap w :if layoutis('only') | vsplit | endif | view<cr>
+  :nnoremap w :if layoutis('only') | vsplit | endif | view!<cr>
 <
 
 paneisat({loc})                                *vifm-paneisat()*
@@ -3466,6 +4001,30 @@ Usage example: >
 
 --------------------------------------------------------------------------------
 *vifm-menus-and-dialogs*
+
+When navigating to some path from a menu there is a difference in end location
+depending on whether path has trailing slash or not.  Files normally don't
+have trailing slashes so "file/" won't work and one can only navigate to
+a file anyway.  On the other hand with directories there are two options:
+navigate to a directory or inside of it.  To allow both use cases, the first
+one is used on paths like "dir" and the second one for "dir/".
+
+Commands~
+
+:range                                         *vifm-m_:range*
+    navigate to a menu line.
+
+:exi[t][!]                                     *vifm-m_:exit* *vifm-m_:exi*
+:q[uit][!]                                     *vifm-m_:quit* *vifm-m_:q*
+:x[it][!]                                      *vifm-m_:xit*  *vifm-m_:x*
+    leave menu mode.
+
+:noh[lsearch]                                  *vifm-m_:nohlsearch*
+                                               *vifm-m_:noh*
+    reset search match highlighting.
+
+:w[rite] {dest}                                *vifm-m_:write* *vifm-m_:w*
+    write all menu lines into file specified by {dest}.
 
 General~
 
@@ -3519,6 +4078,12 @@ B                                              *vifm-m_B*
     same as above, but creates unsorted view.
 
 
+v                                              *vifm-m_v*
+    load menu content into quickfix list of the editor (Vim compatible by
+    assumption) or if list doesn't have separators after file names (colons)
+    open each line as a file name.
+
+
 Below is description of additional commands and reaction on selection in some
 menus and dialogs.
 
@@ -3542,15 +4107,33 @@ Selecting command executes it with empty arguments (|vifm-%a|).
 
 Type dd on a command to remove.
 
+c leaves menu preserving file selection and inserts right-hand side of
+selected command into command-line.
+
+Marks menu~
+
+Selecting a mark navigates to it.
+
+Type dd on a mark to remove it.
+
 Bookmarks menu~
 
-Selecting bookmark navigates to it.
+Selecting a bookmark navigates to it.
 
-Type dd on a bookmark to remove.
+Type dd on a bookmark to remove it.
 
-Trash menu~
+|vifm-m_gf| and |vifm-m_e| also work to make it more convenient to bookmark
+files.
+
+Trash (:lstrash) menu~
 
 r on a file name to restore it from trash.
+
+dd deletes file under the cursor.
+
+Trashes menu~
+
+dd empties selected trash in background.
 
 Directory history and Trashes menus~
 
@@ -3567,7 +4150,10 @@ Filetype menu~
 Commands from vifmrc or typed in command-line are displayed above empty line.
 All commands below empty line are from .desktop files.
 
-Grep, find, locate and user menu with navigation (%M macro)~
+c leaves menu preserving file selection and inserts command after :! in
+command-line mode.
+
+Grep, find, locate, bookmarks and user menu with navigation (%M macro)~
 
 gf                                             *vifm-m_gf*
     navigate previously active view to currently selected item.  Leaves menu
@@ -3575,6 +4161,15 @@ gf                                             *vifm-m_gf*
 
 e                                              *vifm-m_e*
     open selected path in the editor, stays in menu mode.
+
+c                                              *vifm-m_c*
+    leave menu preserving file selection and insert file name after :! in
+    command-line mode.
+
+User menu without navigation (%m macro)~
+
+c leaves menu preserving file selection and inserts whole line after :! in
+command-line mode.
 
 Grep menu~
 
@@ -3586,7 +4181,11 @@ See above for "gf" and "e" keys description.
 
 Command-line history menu~
 
-Selecting an item will execute it as command-line command or search query.
+Selecting an item executes it as command-line command, search query or local
+filter.
+
+c leaves menu preserving file selection and inserts line into command-line of
+appropriate kind.
 
 Volumes menu~
 
@@ -3601,6 +4200,8 @@ Sort dialog ~
 h, Space - switch ascending/descending.
 q - close dialog
 
+One shortcut per sorting key (see the dialog).
+
 Attributes (permissions or properties) dialog~
 
 h, Space - check/uncheck.
@@ -3611,9 +4212,20 @@ Item states:
 X - means that it has different value for files in selection.
                                                {only for *nix}
 d - (only for execute flags) means u-x+X, g-x+X or o-x+X argument for the
-    chmod program.  If you want to remove execute right from all files, but
-    preserve it for directories, set all execute flags to 'd' and check
-    'Set Recursively' flag.
+    chmod program.  If you're not on OS X and want to remove execute permission
+    bit from all files, but preserve it for directories, set all execute flags
+    to 'd' and check 'Set Recursively' flag.
+
+Jobs menu~
+
+dd requests cancellation of job under cursor.  The job won't be removed from
+the list, but marked as being cancelled (if cancellation was successfully
+requested).  A message will pop up if the job has already stopped.
+Note that on Windows cancelling external programs like this might not work,
+because their parent shell doesn't have any windows.
+
+e key displays errors of selected job if any were collected.  They are
+displayed in a new menu, but you can get back to jobs menu by pressing h.
 
 --------------------------------------------------------------------------------
 *vifm-custom-views*
@@ -3645,7 +4257,10 @@ Custom views have some differences related to navigation in regular views.
 gf - acts similar to |vifm-gf| on symbolic links and navigates to the file at
      its real location
 
-h, gh - return to the original directory.
+h - go to closes parent node in tree view, otherwise return to the original
+directory.
+
+gh - return to the original directory.
 
 Opening ".." entry also causes return to the original directory.
 
@@ -3694,6 +4309,108 @@ doesn't make much sense.
 On the other hand, operations that use files of a custom view as a source
 (e.g. yanking, copying, moving file from custom view, deletion) and operations
 that modify names are all allowed.
+
+--------------------------------------------------------------------------------
+*vifm-compare-views*
+
+Kinds~
+
+|vifm-:compare| can produce four different results depending on arguments:
+ - single compare view (ofone and either listall or listdups);
+ - single custom view (ofone and listunique);
+ - two compare views (ofboth and either listall or listdups);
+ - two custom views (ofboth and listunique).
+
+The first two display files of one file system tree.  Here duplicates are
+files that have at least one copy in the same tree.  The other two kinds of
+operation compare two trees, in which duplicates are files that are found in
+both trees.
+
+Lists of unique files are presented in custom views because there is no file
+grouping to preserve as all file ids are guaranteed to be distinct.
+
+Creation~
+
+Arguments passed to |vifm-:compare| form four categories each with its own
+prefix and is responsible for particular property of operation.
+
+Which files to compare:
+ - ofboth - compares files of two panes against each other;
+ - ofone  - compares files of the same directory.
+
+How files are compared:
+ - byname     - by their name only;
+ - bysize     - only by their size;
+ - bycontents - by combination of size and hash of file contents.
+
+Which files to display:
+ - listall    - all files;
+ - listunique - unique files only;
+ - listdups   - only duplicated files.
+
+How results are grouped (has no effect if "ofone" specified):
+ - groupids   - files considered identical are always adjacent in output;
+ - grouppaths - file system ordering is preferred (this also enables
+                displaying identically named files as mismatches).
+
+Which files to omit:
+ - skipempty - ignore empty files.
+
+Each argument can appear multiple times, the rightmost one of the group is
+considered.  Arguments alter default behaviour instead of substituting it.
+
+Examples~
+
+The defaults corresponds to probably the most common use case of comparing
+files in two trees with grouping by paths, so the following are equivalent: >
+
+ :compare
+ :compare bycontents grouppaths
+ :compare bycontents listall ofboth grouppaths
+
+Another use case is to find duplicates in the current sub-tree: >
+
+ :compare listdups ofone
+
+The following command lists files that are unique to each pane: >
+
+ :compare listunique
+
+Look~
+
+The view can't switch to ls-like view as it's unable to display diff-like
+data.
+
+Comparison views have second column displaying id of the file, files with same
+id are considered to be equal.  The view columns configuration is predefined.
+
+Behaviour~
+
+When two views are being compared against each other the following changes to
+the regular behaviour apply:
+ - views are scrolled synchronously (as if |vifm-'scrollbind'| was set);
+ - views' cursors are synchronized;
+ - local filtering is disabled (its results wouldn't be meaningful);
+ - |vifm-zd| excludes groups of adjacent identical files, 1zd gives usual
+   behaviour;
+ - sorting is permanently disabled (ordering is fixed);
+ - removed files hide their counter pairs;
+ - exiting one of the views terminates the other immediately;
+ - renaming files isn't blocked, but isn't taken into account and might
+   require regeneration of comparison;
+ - entries which indicate absence of equivalent file have empty names and can
+   be matched as such;
+ - when unique files of both views are listed custom views can be empty, this
+   absence of unique files is stated clearly.
+
+One compare view has similar properties (those that are applicable for single
+pane).
+
+Files are gathered in this way:
+ - recursively starting at current location of the view;
+ - dot files are excluded if view hides them at the moment of comparison;
+ - directories are not taken into account;
+ - symbolic links to directories are ignored.
 
 --------------------------------------------------------------------------------
 *vifm-startup*
@@ -3753,15 +4470,16 @@ The $VIFM/vifminfo file contains session settings.  You may edit it by hand
 to change the settings, but it's not recommended to do that, edit vifmrc
 instead.  You can control what settings will be saved in vifminfo by setting
 |vifm-'vifminfo'| option.  Vifm always writes this file on exit unless
-|vifm-'vifminfo'| option is empty.  Bookmarks, commands, histories, filetypes,
-fileviewers and registers in the file are merged with vifm configuration.
+|vifm-'vifminfo'| option is empty.  Marks, bookmarks, commands, histories,
+filetypes, fileviewers and registers in the file are merged with vifm
+configuration.
 
 Generally, runtime configuration has bigger priority during merging, but there
 are some exceptions:
  - directory stack stored in the file is not overwritten unless something is
    changed in vifm session that performs merge;
- - each bookmark is marked with a timestamp, so that newer value is not
-   overwritten by older one, thus no matter from where bookmark comes, the
+ - each mark or bookmark is marked with a timestamp, so that newer value is
+   not overwritten by older one, thus no matter from where it comes, the
    newer one wins.
 
                                                *vifm-scripts*
@@ -3787,7 +4505,7 @@ and for this reason the following rules apply during lookup:
 
 vifm has a builtin support of automated FUSE file system mounts.  It is
 implemented using file associations mechanism.  To enable automated mounts, one
-needs to use a specially formated program line in |vifm-:filetype| or
+needs to use a specially formatted program line in |vifm-:filetype| or
 |vifm-:filextype| commands.  Currently two formats are supported:
 
 1) FUSE_MOUNT                                  *vifm-FUSE_MOUNT*
@@ -3874,6 +4592,8 @@ In this mode file manipulation commands (e.g. |vifm-d|) don't work line-wise lik
 they do in Vim, since such operations would be uncommon for file manipulating
 tasks.  Thus, for example, |vifm-dd| will remove only current file.
 
+Note that tree-view and compare view inhibit ls-like view.
+
 --------------------------------------------------------------------------------
 *vifm-column-view*
 
@@ -3890,20 +4610,32 @@ So it basically consists of four parts:
 
 Alignment specifier~
 
-It's an optional minus sign as the first symbol of the string.
+It's an optional minus or asterisk sign as the first symbol of the string.
 
 Specifies type of text alignment within a column.  Two types are supported:
+
  - left align >
+
      set viewcolumns=-{name}
-<- right align (default) >
+<
+ - right align (default) >
+
      set viewcolumns={name}
+<
+ - dynamic align
+
+    It's like left alignment, but when the text is bigger than the column,
+    the alignment is made at the right (so the part of the field is always
+    visible). >
+
+     set viewcolumns=*{name}
 <
 Width specifier~
 
 It's a number followed by a percent sign, two numbers (second one should be
 less than or equal to the first one) separated with a dot or a single number.
 
-Specifies column width and its units. There are tree size types:
+Specifies column width and its units. There are three size types:
  - absolute size - column width is specified in characters >
      set viewcolumns=-100{name},20.15{ext}
 <  results in two columns with lengths of 100 and 20 and a reserved space of
@@ -3939,7 +4671,7 @@ Cropping specifier~
 It's from one to three dots after closing curly brace in column format.
 
 Specifies type of text truncation if it doesn't fit in the column.  Currently
-tree types are supported:
+three types are supported:
  - truncation - text is truncated >
      set viewcolumns=-{name}.
 <  results in truncation of names that are too long too fit in the view.
@@ -3963,8 +4695,8 @@ Both types are set using |vifm-:colorscheme| command, but of different forms:
 
 Look of different parts of the TUI (Text User Interface) is determined in
 this way:
-   - Border, TopLineSel, TopLine, CmdLine, ErrorMsg, StatusLine, JobLine and
-     WildMenu are always determined by the primary color scheme
+   - Border, TopLineSel, TopLine, CmdLine, ErrorMsg, StatusLine, JobLine,
+     SuggestBox and WildMenu are always determined by the primary color scheme
    - CurrLine, Selected, Directory, Link, BrokenLink, Socket, Device,
      Executable, Fifo and Win are determined by primary color scheme and a set
      of local color schemes, which can be empty
@@ -4056,10 +4788,18 @@ right after --remote argument, like this: >
     vifm --remote /
     vifm --remote ~
     vifm --remote /usr/bin /tmp
-<
-At the moment there is no way of specifying, which instance of vifm should
-arguments be sent.  The main purpose of --remote argument is to provide
-support of using vifm as a single-instance application.
+
+If there are several running instances, the target can be specified with
+|vifm---server-name| option (otherwise, the first one lexicographically is used): >
+    vifm --server-name work --remote ~/work/project
+
+List of names of running instances can be obtained via |vifm---server-list|
+option.  Name of the current one is available via v:servername.
+
+                                               *vifm-v:servername*
+v:servername                                   *vifm-servername-variable*
+    server name of the running vifm instance.  Empty if client-server feature
+    is disabled.
 
 --------------------------------------------------------------------------------
 *vifm-plugin*
@@ -4105,8 +4845,8 @@ work this way on its own).
 
 Vim plugin documentation: |vifm-plugin.txt|
 
-Website: http://vifm.info/
-Wiki: http://wiki.vifm.info/
+Website: https://vifm.info/
+Wiki: https://wiki.vifm.info/
 
 Esperanto translation of the documentation by Sebastian Cyprych:
 http://cyprych.neostrada.pl/tekstoj/komputiloj/vifm-help.eo.html

@@ -4,9 +4,9 @@
 " Last Change: 2001 November 29
 
 " Maintainer: xaizek <xaizek@openmailbox.org>
-" Last Change: 2014 November 05
+" Last Change: 2016 June 28
 
-" vifm and vifm.vim can be found at http://vifm.info/
+" vifm and vifm.vim can be found at https://vifm.info/
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -57,41 +57,6 @@ if !exists('g:vifm_term')
 	endif
 endif
 
-if !exists('g:vifm_home') &&  has('win32')
-	if filereadable(g:vifm_exec) || filereadable(g:vifm_exec.'.exe')
-		let g:vifm_home = fnamemodify(g:vifm_exec, ':p:h')
-	else
-		let g:vifm_home = $PATH
-		let g:vifm_home = substitute(g:vifm_home, ';', ',', 'g').',.'
-		let s:lst_str = globpath(g:vifm_home, g:vifm_exec, 1)
-		let s:lst = split(s:lst_str, '\n')
-		if empty(s:lst)
-			let s:lst_str = globpath(g:vifm_home, g:vifm_exec.'.exe', 1)
-			let s:lst = split(s:lst_str, '\n')
-		endif
-		if empty(s:lst)
-			finish
-		endif
-		let g:vifm_home = s:lst[0]
-		unlet s:lst_str
-		unlet s:lst
-	endif
-	if !filereadable(g:vifm_home.'/vifmrc')
-		unlet g:vifm_home
-	endif
-endif
-
-if !exists('g:vifm_home')
-	if exists('$HOME') && isdirectory($HOME .'/.vifm/')
-		let g:vifm_home = $HOME."/.vifm"
-	elseif exists('$APPDATA') && isdirectory($APPDATA.'/Vifm/')
-		let g:vifm_home = $APPDATA."/Vifm"
-	else
-		echohl WarningMsg | echo 'Impossible to find your vifm configuration directory. Launch vifm one time and try again.' | echohl None
-		finish
-	endif
-endif
-
 function! s:StartVifm(editcmd, ...)
 	if a:0 > 2
 		echohl WarningMsg | echo 'Too many arguments' | echohl None
@@ -103,18 +68,63 @@ function! s:StartVifm(editcmd, ...)
 	let rdir = (a:0 > 1) ? a:2 : ''
 	let rdir = s:PreparePath(rdir)
 
-	" Gvim cannot handle ncurses so run vifm in a terminal.
-	if has('gui_running')
-		execute 'silent !' g:vifm_term g:vifm_exec '-f' g:vifm_exec_args ldir
-		      \ rdir
+	let listf = tempname()
+	let typef = tempname()
+
+	" XXX: this is horrible, but had to do this to work around selection
+	"      clearing after each command-line command (:let in this case)
+	let edit = ' | execute ''cnoremap j <cr>'' | normal gs:editj'
+
+	let pickargs = [
+	    \ '--choose-files', listf,
+	    \ '--on-choose',
+	    \ has('win32')
+	    \ ? 'echo \"%%VIFM_OPEN_TYPE%%\">' . typef : 'echo $VIFM_OPEN_TYPE >' . typef,
+	    \ '+command EditVim   :let $VIFM_OPEN_TYPE=''edit''' . edit,
+	    \ '+command VsplitVim :let $VIFM_OPEN_TYPE=''vsplit''' . edit,
+	    \ '+command SplitVim  :let $VIFM_OPEN_TYPE=''split''' . edit,
+	    \ '+command DiffVim   :let $VIFM_OPEN_TYPE=''vert diffsplit''' . edit,
+	    \ '+command TabVim    :let $VIFM_OPEN_TYPE=''tablast | tab drop''' . edit]
+	call map(pickargs, 'shellescape(v:val, 1)')
+	let pickargsstr = join(pickargs, ' ')
+
+	if !has('nvim')
+		" Gvim cannot handle ncurses so run vifm in a terminal.
+		if has('gui_running')
+			execute 'silent !' g:vifm_term g:vifm_exec g:vifm_exec_args ldir rdir
+			      \ pickargsstr
+		else
+			execute 'silent !' g:vifm_exec g:vifm_exec_args ldir rdir pickargsstr
+		endif
+
+		" Execution of external command might have left Vim's window cleared, force
+		" redraw before doing anything else.
+		redraw!
+
+		call s:HandleRunResults(v:shell_error, listf, typef, a:editcmd)
 	else
-		execute 'silent !' g:vifm_exec '-f' g:vifm_exec_args ldir rdir
+		" Work around handicapped neovim...
+		let callback = { 'listf': listf, 'typef' : typef, 'editcmd' : a:editcmd }
+		function! callback.on_exit(id, code)
+			buffer #
+			silent! bdelete! #
+			call s:HandleRunResults(a:code, self.listf, self.typef, self.editcmd)
+		endfunction
+		enew
+		call termopen(g:vifm_exec . ' ' . g:vifm_exec_args . ' ' . ldir . ' ' . rdir
+		             \. ' ' . pickargsstr, callback)
+		execute 'keepalt file' escape('vifm: '.a:editcmd, ' |')
+		startinsert
 	endif
+endfunction
 
-	redraw!
-
-	if v:shell_error != 0
-		echohl WarningMsg | echo 'Got non-zero code from vifm' | echohl None
+function! s:HandleRunResults(exitcode, listf, typef, editcmd)
+	if a:exitcode != 0
+		echohl WarningMsg
+		echo 'Got non-zero code from vifm: ' . a:exitcode
+		echohl None
+		call delete(a:listf)
+		call delete(a:typef)
 		return
 	endif
 
@@ -122,13 +132,18 @@ function! s:StartVifm(editcmd, ...)
 	" vim's clientserver so that it will work in the console without a X server
 	" running.
 
-	let vimfiles = fnamemodify(g:vifm_home.'/vimfiles', ':p')
-	if !file_readable(vimfiles)
-		echohl WarningMsg | echo 'vimfiles file not found' | echohl None
+	if !file_readable(a:listf)
+		echohl WarningMsg | echo 'Failed to read list of files' | echohl None
+		call delete(a:listf)
+		call delete(a:typef)
 		return
 	endif
 
-	let flist = readfile(vimfiles)
+	let flist = readfile(a:listf)
+	call delete(a:listf)
+
+	let opentype = file_readable(a:typef) ? readfile(a:typef) : []
+	call delete(a:typef)
 
 	call map(flist, 'fnameescape(v:val)')
 
@@ -138,7 +153,14 @@ function! s:StartVifm(editcmd, ...)
 		return
 	endif
 
-	if a:editcmd == 'edit'
+	if !empty(opentype) && !empty(opentype[0]) &&
+		\ opentype[0] != '"%VIFM_OPEN_TYPE%"'
+	   let editcmd = has('win32') ? opentype[0][1:-2] : opentype[0]
+	else
+		 let editcmd = a:editcmd
+	endif
+
+	if editcmd == 'edit'
 		call map(flist, 'fnamemodify(v:val, ":.")')
 		execute 'args' join(flist)
 		return
@@ -146,13 +168,13 @@ function! s:StartVifm(editcmd, ...)
 
 	" Don't split if current window is empty
 	let firstfile = flist[0]
-	if expand('%') == '' && a:editcmd =~ '^v\?split$'
+	if expand('%') == '' && editcmd =~ '^v\?split$'
 		execute 'edit' fnamemodify(flist[0], ':.')
 		let flist = flist[1:-1]
 	endif
 
 	for file in flist
-		execute a:editcmd fnamemodify(file, ':.')
+		execute editcmd fnamemodify(file, ':.')
 	endfor
 	" Go to first file
 	execute 'drop' firstfile
@@ -183,7 +205,7 @@ function! vifm#synnames(...) abort
 	return reverse(map(synstack(line, col), 'synIDattr(v:val,"name")'))
 endfunction
 
-let g:vifm_help_mapping = get(g:, 'vifm_help_mapping', 'gk')
+let g:vifm_help_mapping = get(g:, 'vifm_help_mapping', 'K')
 
 augroup VifmHelpAutoCmds
 	autocmd!
