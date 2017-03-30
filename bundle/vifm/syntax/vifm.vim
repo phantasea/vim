@@ -1,6 +1,6 @@
 " vifm syntax file
 " Maintainer:  xaizek <xaizek@openmailbox.org>
-" Last Change: November 05, 2016
+" Last Change: January 17, 2017
 " Based On:    Vim syntax file by Dr. Charles E. Campbell, Jr.
 
 if exists('b:current_syntax')
@@ -18,9 +18,10 @@ syntax keyword vifmCommand contained alink apropos bmark bmarks bmgo change
 		\ delm[arks] di[splay] dirs e[dit] el[se] empty en[dif] exi[t] file filter
 		\ fin[d] fini[sh] gr[ep] h[elp] his[tory] jobs locate ls lstrash marks
 		\ mes[sages] mkdir m[ove] noh[lsearch] on[ly] popd pushd pu[t] pw[d] q[uit]
-		\ redr[aw] reg[isters] rename restart restore rlink screen sh[ell] sor[t]
-		\ sp[lit] s[ubstitute] touch tr trashes tree sync undol[ist] ve[rsion]
-		\ vie[w] vifm vs[plit] winc[md] w[rite] wq x[it] y[ank] nextgroup=vifmArgs
+		\ redr[aw] reg[isters] rename restart restore rlink screen sh[ell] siblnext
+		\ siblprev sor[t] sp[lit] s[ubstitute] touch tr trashes tree sync undol[ist]
+		\ ve[rsion] vie[w] vifm vs[plit] winc[md] w[rite] wq x[it] y[ank]
+		\ nextgroup=vifmArgs
 
 " commands that might be prepended to a command without changing everything else
 syntax keyword vifmPrefixCommands contained windo winrun
@@ -124,10 +125,10 @@ syntax keyword vifmOption contained aproposprg autochpos caseoptions cdpath cd
 		\ ignorecase ic iooptions incsearch is laststatus lines locateprg ls lsview
 		\ mintimeoutlen number nu numberwidth nuw relativenumber rnu rulerformat ruf
 		\ runexec scrollbind scb scrolloff so sort sortgroups sortorder sortnumbers
-		\ shell sh shortmess shm slowfs smartcase scs statusline stl suggestoptions
-		\ syscalls tabstop timefmt timeoutlen title tm trash trashdir ts tuioptions
-		\ to undolevels ul vicmd viewcolumns vifminfo vimhelp vixcmd wildmenu wmnu
-		\ wildstyle wordchars wrap wrapscan ws
+		\ shell sh shortmess shm sizefmt slowfs smartcase scs statusline stl
+		\ suggestoptions syscalls tabstop timefmt timeoutlen title tm trash trashdir
+		\ ts tuioptions to undolevels ul vicmd viewcolumns vifminfo vimhelp vixcmd
+		\ wildmenu wmnu wildstyle wordchars wrap wrapscan ws
 
 " Disabled boolean options
 syntax keyword vifmOption contained noautochpos nocf nochaselinks nodotfiles
