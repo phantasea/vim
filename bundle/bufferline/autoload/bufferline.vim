@@ -43,7 +43,7 @@ function! s:generate_names()
             let name = g:bufferline_alt_buffer_tag . name
           endif
 
-          let name = g:bufferline_separator . name . g:bufferline_separator
+          let name = name . g:bufferline_separator
         endif
 
         call add(names, [i, name])
