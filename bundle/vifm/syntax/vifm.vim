@@ -128,7 +128,7 @@ syntax keyword vifmOption contained aproposprg autochpos caseoptions cdpath cd
 		\ shell sh shortmess shm sizefmt slowfs smartcase scs statusline stl
 		\ suggestoptions syscalls tabstop timefmt timeoutlen title tm trash trashdir
 		\ ts tuioptions to undolevels ul vicmd viewcolumns vifminfo vimhelp vixcmd
-		\ wildmenu wmnu wildstyle wordchars wrap wrapscan ws
+		\ wildmenu wmnu wildstyle wordchars wrap wrapscan ws prefervsplit
 
 " Disabled boolean options
 syntax keyword vifmOption contained noautochpos nocf nochaselinks nodotfiles
@@ -136,7 +136,7 @@ syntax keyword vifmOption contained noautochpos nocf nochaselinks nodotfiles
 		\ noincsearch nois nolaststatus nols nolsview nonumber nonu norelativenumber
 		\ nornu noscrollbind noscb norunexec nosmartcase noscs nosortnumbers
 		\ nosyscalls notitle notrash novimhelp nowildmenu nowmnu nowrap nowrapscan
-		\ nows
+		\ nows noprefervsplit
 
 " Inverted boolean options
 syntax keyword vifmOption contained invautochpos invcf invchaselinks invdotfiles
