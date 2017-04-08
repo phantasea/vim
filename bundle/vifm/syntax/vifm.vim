@@ -69,7 +69,7 @@ syntax match vifmOperator "\(==\|!=\|>=\?\|<=\?\|\.\|-\|+\|&&\|||\)" skipwhite
 " Highlight groups
 syntax keyword vifmHiArgs contained cterm ctermfg ctermbg
 syntax case ignore
-syntax keyword vifmHiGroups contained WildMenu Border Win CmdLine CurrLine
+syntax keyword vifmHiGroups contained Menu WildMenu Border Win CmdLine CurrLine
 		\ OtherLine Directory Link Socket Device Executable Selected BrokenLink
 		\ TopLine TopLineSel StatusLine JobLine SuggestBox Fifo ErrorMsg CmpMismatch
 syntax keyword vifmHiStyles contained bold underline reverse inverse standout
@@ -129,6 +129,7 @@ syntax keyword vifmOption contained aproposprg autochpos caseoptions cdpath cd
 		\ suggestoptions syscalls tabstop timefmt timeoutlen title tm trash trashdir
 		\ ts tuioptions to undolevels ul vicmd viewcolumns vifminfo vimhelp vixcmd
 		\ wildmenu wmnu wildstyle wordchars wrap wrapscan ws prefervsplit
+		\ hsviewcols vsviewcols
 
 " Disabled boolean options
 syntax keyword vifmOption contained noautochpos nocf nochaselinks nodotfiles
@@ -144,7 +145,7 @@ syntax keyword vifmOption contained invautochpos invcf invchaselinks invdotfiles
 		\ invincsearch invis invlaststatus invls invlsview invnumber invnu
 		\ invrelativenumber invrnu invscrollbind invscb invrunexec invsmartcase
 		\ invscs invsortnumbers invsyscalls invtitle invtrash invvimhelp invwildmenu
-		\ invwmnu invwrap invwrapscan invws
+		\ invwmnu invwrap invwrapscan invws invprefervsplit
 
 " Expressions
 syntax region vifmStatement start='^\(\s\|:\)*'
