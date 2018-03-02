@@ -3,8 +3,8 @@
 " Maintainer: Ken Steen <ksteen@users.sourceforge.net>
 " Last Change: 2001 November 29
 
-" Maintainer: xaizek <xaizek@openmailbox.org>
-" Last Change: 2017 March 15
+" Maintainer: xaizek <xaizek@posteo.net>
+" Last Change: 2018 January 01
 
 " vifm and vifm.vim can be found at https://vifm.info/
 
@@ -47,26 +47,7 @@ function! s:StartVifm(editcmd, ...)
 	echohl WarningMsg | echo 'vifm executable wasn''t found' | echohl None
 endfunction
 
-if !exists('g:vifm_exec')
-	let g:vifm_exec = 'vifm'
-endif
-
-if !exists('g:vifm_exec_args')
-	let g:vifm_exec_args = ''
-endif
-
-if !exists('g:vifm_term')
-	if has('win32')
-		if filereadable('C:\Windows\system32\cmd.exe')
-			let g:vifm_term = 'C:\Windows\system32\cmd.exe /C'
-		else
-			" If don't find use the integrate shell it work too
-			let g:vifm_term = ''
-		endif
-	else
-		let g:vifm_term = 'xterm -e'
-	endif
-endif
+call vifm#globals#Init()
 
 function! s:StartVifm(editcmd, ...)
 	if a:0 > 2
@@ -116,7 +97,7 @@ function! s:StartVifm(editcmd, ...)
 	else
 		" Work around handicapped neovim...
 		let callback = { 'listf': listf, 'typef' : typef, 'editcmd' : a:editcmd }
-		function! callback.on_exit(id, code)
+		function! callback.on_exit(id, code, event)
 			buffer #
 			silent! bdelete! #
 			call s:HandleRunResults(a:code, self.listf, self.typef, self.editcmd)
@@ -178,6 +159,8 @@ function! s:HandleRunResults(exitcode, listf, typef, editcmd)
 		let flist = flist[1:-1]
 	endif
 
+	" We emulate :args to not leave unnamed buffer around after we open our
+	" buffers.
 	if editcmd == 'edit' && len(flist) > 1
 		silent! %argdelete
 	endif
@@ -185,16 +168,17 @@ function! s:HandleRunResults(exitcode, listf, typef, editcmd)
 	for file in flist
 		execute editcmd fnamemodify(file, ':.')
 		if editcmd == 'edit' && len(flist) > 1
-			argadd
+			execute 'argadd' fnamemodify(file, ':.')
 		endif
 	endfor
 
 	" Go to the first file working around possibility that :drop command is not
 	" evailable, if possible
-	if s:has_drop
-		execute 'drop' firstfile
-	elseif editcmd == 'edit'
+	if editcmd == 'edit'
 		execute 'buffer' fnamemodify(firstfile, ':.')
+	elseif s:has_drop
+		" Mind that drop replaces arglist, so don't use it with :edit.
+		execute 'drop' firstfile
 	endif
 endfunction
 
@@ -223,7 +207,7 @@ function! vifm#synnames(...) abort
 	return reverse(map(synstack(line, col), 'synIDattr(v:val,"name")'))
 endfunction
 
-let g:vifm_help_mapping = get(g:, 'vifm_help_mapping', '<F1>')
+let g:vifm_help_mapping = get(g:, 'vifm_help_mapping', 'K')
 
 augroup VifmHelpAutoCmds
 	autocmd!
