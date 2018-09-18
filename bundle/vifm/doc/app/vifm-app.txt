@@ -1,4 +1,4 @@
-*vifm-app.txt*    For Vifm version 0.9.1  Last change: 2018 Feb 27
+*vifm-app.txt*    For Vifm version 0.9.1  Last change: 2018 Jul 12
 
  Email for bugs and suggestions: <xaizek@posteo.net>
 
@@ -16,7 +16,7 @@
 |vifm-patterns|           Description of file match patterns.
 |vifm-globs|              How globs work in vifm.
 |vifm-set-options|        Available options.
-|vifm-mappings|           Special sequences.
+|vifm-mappings|           Map arguments and special sequences.
 |vifm-expression-syntax|  Syntax of supported expressions.
 |vifm-functions|          List of builtin functions with description.
 |vifm-menus-and-dialogs|  Keys and commands for menus and dialogs.
@@ -602,9 +602,10 @@ ZZ - same as |vifm-:quit|.                       *vifm-ZZ*
 
 
 {                                              *vifm-{*
-    similar to ( key, but always considers whether entry is file or
-    directory and thus speeds up navigation to closest previous entry of
-    the opposite type.
+    speeds up navigation to closest previous entry of the opposite type by
+    moving to the first file backwards when cursor is on a directory and
+    to the first directory backwards when cursor is on a file.  This is
+    essentially a special case of ( that is locked on "dirs".
 
 }                                              *vifm-}*
     same as {, but in forward direction.
@@ -1695,6 +1696,7 @@ Available style values (some of them can be combined):
  - underline
  - reverse or inverse
  - standout
+ - italic (on unsupported systems becomes reverse)
  - none
 
 Available group-name values:
@@ -1723,6 +1725,7 @@ Available group-name values:
  - Executable - color of executable files
  - Fifo - color of fifo pipes
  - CmpMismatch - color of mismatched files in side-by-side comparison by paths
+ - User1..User9 - 9 colors which can be used via %* |vifm-'statusline'| macro
 
 Available colors:
  - -1 or default or none - transparent
@@ -1856,6 +1859,7 @@ transparency:
   SuggestBox
   StatusLine
     WildMenu
+    User1..User9
   Border
   CmdLine
     ErrorMsg
@@ -2326,7 +2330,7 @@ yet supported) and might be changed in future releases, or get an alias.
 
                                                *vifm-:view* *vifm-:vie*
 :vie[w]
-    toggle quick file view.
+    toggle quick file view.  See also |vifm-'quickview'| option.
 :vie[w]!
     turn on quick file view if it's off.
 
@@ -2818,6 +2822,9 @@ l key in the ":history ." and ":trashes" menus are treated like :cd command.
 This option also affects marks so that navigating to a mark doesn't restore
 cursor position.
 
+When this option is enabled, more fine grained control over cursor position
+is available via |vifm-'histcursor'| option.
+
                                                *vifm-'caseoptions'*
 caseoptions
 type: charset
@@ -3093,12 +3100,27 @@ See |vifm-'findprg'| for description of difference between %a and %A.
 
 Example of setup to use ack (http://beyondgrep.com/) instead of grep:
 >
-    set grepprg=ack\ -H\ -r\ %i\ %a\ %s
+    set grepprg='ack -H -r %i %a %s'
 <
 or The Silver Searcher (https://github.com/ggreer/the_silver_searcher):
 >
-    set grepprg=ag\ --line-numbers\ %i\ %a\ %s
+    set grepprg='ag --line-numbers %i %a %s'
 <
+                                               *vifm-'histcursor'*
+histcursor
+type: set
+default: startup,dirmark,direnter
+
+Defines situations when cursor should be moved according to directory
+history:
+ - startup  - on loading file lists during startup
+ - dirmark  - after navigating to a mark that doesn't specify file
+ - direnter - on opening directory from a file list
+
+This option has no effect when |vifm-'autochpos'| is disabled.
+
+Note that the list is not exhaustive and there are other situations when
+cursor is positioned automatically.
                                                *vifm-'history'* *vifm-'hi'*
 history hi
 type: integer
@@ -3269,6 +3291,13 @@ Example: >
     " always show git log in preview of files inside some repository
     au DirEnter '~/git-repo/**/*' setl previewprg='git log --color -- %c 2>&1'
 <
+                                               *vifm-'quickview'*
+quickview
+type: boolean
+default: false
+
+Whether quick view (|vifm-:view|) is currently active or not.
+
                                                *vifm-'relativenumber'*
                                                *vifm-'rnu'*
 relativenumber rnu
@@ -3354,6 +3383,8 @@ default: "p"
 
 Contains a sequence of single-character flags.  Each flag enables shortening
 of some message displayed by vifm in the TUI.  Flags:
+  M - shorten titles in windows of terminal multiplexers created by vifm
+      down to file name instead of using full path.
   T - truncate status-bar messages in the middle if they are too long to fit on
       the command line.  "..." will appear in the middle.
   p - use tilde shortening in view titles.
@@ -3532,6 +3563,9 @@ are supported:
     %a - amount of free space available at current partition
     %z - short tips/tricks/hints that chosen randomly after one minute period
     `%{<expr>}` - evaluate arbitrary vifm expression `<expr>`, e.g. `&sort`
+    %* - resets or applies one of User1..User9 highlight groups; reset happens
+         when width field is 0 or not specified, one of groups gets picked
+         when width field is in the range from 1 to 9
     all |vifm-'rulerformat'| macros
 Percent sign can be followed by optional minimum field width.  Add '-' before
 minimum field width if you want field to be right aligned.
@@ -3549,8 +3583,13 @@ is on):
     P - reparse point (e.g. symbolic link)
     Z - sparse file
 
-Example: >
- set statusline="  %t%= %A %10u:%-7g %15s %20d "
+Example without colors: >
+ set statusline="  %t%= %A %10u:%-7g %15s %20d %{&sort} "
+
+Example with colors: >
+ highlight User1 ctermbg=yellow
+ highlight User2 ctermbg=blue ctermfg=white cterm=bold
+ set statusline="%1* %-26t %2*%=%1* %A %2* %7u:%-7g %1* %-5s %2* %d "
 <
                                                *vifm-'suggestoptions'*
 suggestoptions
@@ -3571,6 +3610,16 @@ values are available:
  - foldsubkeys     - fold multiple keys with common prefix;
  - marks           - include marks;
  - registers[:num] - include registers, at most num files (5 by default).
+
+                                               *vifm-'syncregs'*
+syncregs
+type: string
+default:
+
+Specifies identifier of group of instances that share registers between each
+other.  When several instances of vifm have this option set to identical
+value, they automatically synchronize contents of their registers on
+operations which use them.
 
                                                *vifm-'syscalls'*
 syscalls
@@ -3602,7 +3651,7 @@ Number of spaces that a Tab in the file counts for.
                                                *vifm-'timefmt'*
 timefmt
 type: string
-default: " %m/%d %H:%M"
+default: "%m/%d %H:%M"
 
 Format of time in file list.  See man date or man strftime for details.
 
@@ -3818,6 +3867,16 @@ Searches wrap around end of the list.
 --------------------------------------------------------------------------------
 *vifm-mappings*
 
+Map arguments~
+
+LHS of mappings can be preceded by arguments which take the form of special
+sequences:
+
+<silent>
+    Postpone UI updates until RHS is completely processed.
+
+Special sequences~
+
 Since it's not easy to enter special characters there are several special
 sequences that can be used in place of them.  They are:
 
@@ -3844,6 +3903,8 @@ sequences that can be used in place of them.  They are:
 <del> <delete>
     Delete key.  <del> and <delete> mean different codes, but <delete> is
     more common.
+<insert>
+    Insert key.
 <c-a>,<c-b>,...,<c-z>,<c-[>,<c-\>,<c-]>,<c-^>,<c-_>
     Control + some key (see key conflict description below).
 <a-a>,<a-b>,...,<a-z>
@@ -3869,6 +3930,7 @@ might be mapped to single key code, for example:
  - <tab> and <c-i>;
  - <c-h> and <bs>;
  - etc.
+
 Most of the time they are defined consistently and don't cause surprises, but
 <c-h> and <bs> are treated differently in different environments (although they
 match each other all the time), that's why they correspond to different keys
@@ -3880,6 +3942,8 @@ following: >
   map <c-h> <bs>
   " if mappings with <bs> in the LHS work
   map <bs> <c-h>
+
+Whitespace~
 
 vifm removes whitespace characters at the beginning and end of commands.
 That's why you may want to use <space> at the end of rhs in mappings.  For
@@ -3927,6 +3991,7 @@ Expression syntax summary, from least to most significant:
            $VAR                    environment variable
            v:var                   builtin variable
            function(expr1, ...)    function call
+           (expr1)                 nested expression
 
 ".." indicates that the operations in this level can be concatenated.
 
@@ -4123,6 +4188,13 @@ Examples: >
   "'" . filetype('.') . "'"
   filetype('.') == 'reg'
 <
+expression nesting                             *vifm-expr-nesting*
+------------------
+(expr1)               nested expression
+
+Groups any other expression of arbitrary complexity enforcing order in which
+operators are applied.
+
 --------------------------------------------------------------------------------
 *vifm-functions*
 
@@ -4132,6 +4204,7 @@ chooseopt({opt})    String        Queries choose parameters passed on startup.
 executable({expr})  Integer       Checks whether {expr} command available.
 expand({expr})      String        Expands special keywords in {expr}.
 filetype({fnum})    String        Returns file type from position.
+fnameescape({expr}) String        Escapes {expr} for use in a :command.
 getpanetype()       String        Returns type of current pane.
 has({property})     Integer       Checks whether instance has {property}.
 layoutis({type})    Integer       Checks whether layout is of type {type}.
@@ -4197,6 +4270,15 @@ The result is a string, which represents file type and is one of the list:
 
 Parameter {fnum} can have following values:
     - '.' to get type of file under the cursor in the active pane
+
+fnameescape({expr})                            *vifm-fnameescape()*
+
+Escapes parameter to make it suitable for use as an argument of a :command.
+List of escaped characters includes %, which is doubled.
+
+Usage example: >
+  " navigate to most recently modified file in current directory
+  execute 'goto' fnameescape(system('ls -t | head -1'))
 
 getpanetype()                                  *vifm-getpanetype()*
 
@@ -4372,7 +4454,7 @@ menus and dialogs.
 
 Apropos menu~
 
-Selecting menu item run man on a given topic.  Menu won't be closed
+Selecting menu item runs man on a given topic.  Menu won't be closed
 automatically to allow view several pages one by one.
 
 Command-line mode abbreviations menu~
@@ -4509,6 +4591,10 @@ because their parent shell doesn't have any windows.
 
 e key displays errors of selected job if any were collected.  They are
 displayed in a new menu, but you can get back to jobs menu by pressing h.
+
+Undolist menu~
+
+r - reset undo position to group under the cursor.
 
 --------------------------------------------------------------------------------
 *vifm-custom-views*
