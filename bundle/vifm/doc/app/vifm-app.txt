@@ -1,4 +1,4 @@
-*vifm-app.txt*    For Vifm version 0.10-beta  Last change: 2018 Nov 05
+*vifm-app.txt*    For Vifm version 0.10  Last change: 2019 Feb 12
 
  Email for bugs and suggestions: <xaizek@posteo.net>
 
@@ -1207,7 +1207,7 @@ The builtin commands are:
                                                *vifm-:autocmd* *vifm-:au*
 :au[tocmd] {event} {pat} {cmd}
     register autocommand for the {event}, which can be:
-      - DirEnter - performed on entering a directory
+      - DirEnter - triggered after directory is changed
     Event name is case insensitive.
 
     {pat} is a comma-separated list of modified globs patterns, which can
@@ -1301,6 +1301,21 @@ The builtin commands are:
 :cd! /dir
     same as :cd /dir /dir.
 
+                                               *vifm-:cds*
+:cds[!] pattern string [flags]
+    navigate to path obtained by substituting first match in current path.
+    Arguments can include slashes, but starting first argument with a
+    separator will activate below form of the command.  Specifying "!"
+    changes directory of both panes.
+    Available flags:
+        i - ignore case (the |vifm-'ignorecase'| and |vifm-'smartcase'|
+            options are not used)
+        I - don't ignore case (the |vifm-'ignorecase'| and
+            |vifm-'smartcase'| options are not used)
+:cds[!]/pattern/string/[flags]
+    same as above, but with |vifm-:substitute|-like syntax.  Other punctuation
+    characters can be used as separators.
+
 :c[hange]                                      *vifm-:change* *vifm-:c*
     create a menu window to alter a files properties.
 
@@ -1349,6 +1364,12 @@ The builtin commands are:
     from command line, but mandatory should be an absolute path when the
     command is executed in scripts loaded at startup (until vifm is
     completely loaded).
+:colo[rscheme] color_scheme_name color_scheme_name...
+    loads the first color scheme in the order given that exists and is supported
+    by the terminal.  If none matches, current one remains unchanged.
+    For example: >
+      " use a separate color scheme for panes which are inside FUSE mounts
+      execute 'colorscheme in-fuse' &fusehome
 
 :comc[lear]                                    *vifm-:comclear* *vifm-:comc*
     remove all user defined commands.
@@ -1662,7 +1683,7 @@ The builtin commands are:
     same as :grep above, but user defines all grep arguments, which are not
     escaped.  Searches among selected files if any.
 :[range]gr[ep][!]
-    repeats last :grep command.  "!" of this command inverts "!" in repeated
+    repeat last :grep command.  "!" of this command inverts "!" in repeated
     command.
 
                                                *vifm-:help* *vifm-:h*
@@ -1674,6 +1695,9 @@ The builtin commands are:
     well).  This form of the command doesn't work when |vifm-'vimhelp'| option
     is off.
 
+:hideui                                        *vifm-:hideui*
+    hide interface to show previous commands' output.
+
                                                *vifm-:highlight* *vifm-:hi*
 :hi[ghlight]
     display information about all highlight groups active at the moment.
@@ -1681,7 +1705,7 @@ The builtin commands are:
     reset all highlighting to builtin defaults and removed all
     filename-specific rules.
 :hi[ghlight] clear ( {pat1,pat2,...} | /regexp/ )
-    removes specified rule.
+    remove specified rule.
 :hi[ghlight] group-name | {pat1,pat2,...} | /regexp/
     display information on given highlight group or file name pattern of color
     scheme used in the active view.
@@ -1706,8 +1730,9 @@ Available group-name values:
          their content (e.g. regular files in views)
  - AuxWin - color of auxiliary areas of windows
  - Border - color of vertical parts of the border
- - TabLine - tab line color
- - TabLineSel - color of the tip of selected tab
+ - TabLine - tab line color (for |vifm-'tabscope'| set to "global")
+ - TabLineSel - color of the tip of selected tab (regardless of
+                |vifm-'tabscope'|)
  - TopLineSel - top line color of the current pane
  - TopLine - top line color of the other pane
  - CmdLine - the command line/status bar color
@@ -1880,6 +1905,7 @@ transparency:
             OtherLine
   TopLine
     TopLineSel
+      TabLineSel (for pane tabs)
   TabLine
     TabLineSel
 
@@ -2039,7 +2065,7 @@ order using the '.' operator.  Any whitespace is ignored.
 :pushd
     exchange top two items of the directory stack.
 
-:[line]pu[t][!] [reg] [ &]                           *vifm-:put* *vifm-:pu*
+:[line]pu[t][!] [reg] [ &]                     *vifm-:put* *vifm-:pu*
     puts files from specified register (" by default) into current directory.
     The [line] can be used to pick node in a tree-view.  "!" moves files
     from their original location instead of copying them.  During this
@@ -2083,6 +2109,9 @@ order using the '.' operator.  Any whitespace is ignored.
     vifmrc files and run startup commands passed in the argument list, thus
     losing all unsaved changes (e.g. recent history or keys mapped in current
     session).
+
+    While many things get reset, some basic UI state and current locations
+    are preserved, including tabs.
 
 :[range]restore                                *vifm-:restore*
     restore file from |vifm-trash| directory, doesn't work outside one of trash
@@ -2483,9 +2512,9 @@ yet supported) and might be changed in future releases, or get an alias.
 
                                                *vifm-:unmap* *vifm-:unm*
 :unm[ap] lhs
-    remove the mapping of lhs from normal and visual modes.
+    remove user mapping of lhs from normal and visual modes.
 :unm[ap]! lhs
-    remove the mapping of lhs from command line mode.
+    remove user mapping of lhs from command line mode.
 
                                                *vifm-:cunmap* *vifm-:cu*
                                                *vifm-:dunmap* *vifm-:du*
@@ -2493,12 +2522,12 @@ yet supported) and might be changed in future releases, or get an alias.
                                                *vifm-:nunmap* *vifm-:nun*
                                                *vifm-:qunmap* *vifm-:qun*
                                                *vifm-:vunmap* *vifm-:vu*
-:cu[nmap] lhs - remove the mapping of lhs from command line mode.
-:du[nmap] lhs - remove the mapping of lhs from dialog modes.
-:mu[nmap] lhs - remove the mapping of lhs from menu mode.
-:nun[map] lhs - remove the mapping of lhs from normal mode.
-:qun[map] lhs - remove the mapping of lhs from view mode.
-:vu[nmap] lhs - remove the mapping of lhs from visual mode.
+:cu[nmap] lhs - remove user mapping of lhs from command line mode.
+:du[nmap] lhs - remove user mapping of lhs from dialog modes.
+:mu[nmap] lhs - remove user mapping of lhs from menu mode.
+:nun[map] lhs - remove user mapping of lhs from normal mode.
+:qun[map] lhs - remove user mapping of lhs from view mode.
+:vu[nmap] lhs - remove user mapping of lhs from visual mode.
 
 Ranges~
                                                                *vifm-ranges*
@@ -3431,6 +3460,15 @@ default: $SHELL or "/bin/sh" or "cmd" (on MS-Windows)
 Full path to the shell to use to run external commands.  On *nix a shell
 argument can be supplied.
 
+                                               *vifm-'shellcmdflag'*
+                                               *vifm-'shcf'*
+shellcmdflag shcf
+type: string
+default: "-c" or "/C" (for cmd.exe on MS-Windows)
+
+Command-line option used to pass a command to |vifm-'shell'|.  It's used in
+contexts where command comes from the user.
+
                                                *vifm-'shortmess'* *vifm-'shm'*
 shortmess shm
 type: charset
@@ -3438,6 +3476,7 @@ default: "p"
 
 Contains a sequence of single-character flags.  Each flag enables shortening
 of some message displayed by vifm in the TUI.  Flags:
+  L - display only last directory in tab line instead of full path.
   M - shorten titles in windows of terminal multiplexers created by vifm
       down to file name instead of using full path.
   T - truncate status-bar messages in the middle if they are too long to fit on
@@ -3644,7 +3683,7 @@ Example without colors: >
 Example with colors: >
  highlight User1 ctermbg=yellow
  highlight User2 ctermbg=blue ctermfg=white cterm=bold
- set statusline="%1* %-26t %2*%=%1* %A %2* %7u:%-7g %1* %-5s %2* %d "
+ set statusline="%1* %-26t %2* %= %1* %A %2* %7u:%-7g %1* %-5s %2* %d "
 <
                                                *vifm-'suggestoptions'*
 suggestoptions
@@ -3796,8 +3835,9 @@ vicmd
 type: string
 default: "vim"
 
-The actual command used to start vi.  Ampersand sign at the end (regardless
-whether it's preceded by space or not) means backgrounding of command.
+Command used to edit files in various contexts.  Ampersand sign at the end
+(regardless whether it's preceded by space or not) means backgrounding of
+command.
 
 Background flag is ignored in certain context where vifm waits for the editor
 to finish.  Such contexts include any command that spawns editor to change
@@ -3827,7 +3867,8 @@ vixcmd
 type: string
 default: value of |vifm-'vicmd'|
 
-Same as 'vicmd', but takes precedence over it when running in X.
+Same as |vifm-'vicmd'|, but takes precedence over it when running inside a
+graphical environment.
 
                                                *vifm-'vifminfo'*
 vifminfo
@@ -5123,7 +5164,10 @@ This is just a sort key surrounded with curly braces or {root}, e.g. >
 |vifm-'sort'| option.
 
 Following keys don't have corresponding sorting keys:
- - {root} - display name without extension (as a complement for {ext})
+ - {root}     - display name without extension (as a complement for {ext})
+ - {fileroot} - display name without extension for anything except for
+                directories and symbolic links to directories (as a
+                complement for {fileext})
 
 Empty curly braces ({}) are replaced with the default secondary column for
 primary sort key. So after the next command views will be displayed almost as

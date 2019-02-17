@@ -5,8 +5,8 @@ if exists("g:loaded_linemark")
 endif
 let g:loaded_linemark = 1
 
-nnoremap  <silent> mm :call <SID>HighlightLine() \| nohls<CR>
-nnoremap  <silent> mc :call <SID>HighlightClear()<CR>
+nnoremap  <silent> ml :call <SID>HighlightLine() \| nohls<CR>
+nnoremap  <silent> mL :call <SID>HighlightClear()<CR>
 
 let g:hili_bg = ["Blue",  "Cyan",  "Green", "Magenta", "Red",   "Yellow", "White"]  
 let g:hili_fg = ["White", "White", "White", "White",   "White", "White",  "Black"]  

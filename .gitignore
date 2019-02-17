@@ -3,6 +3,8 @@
 !/.gitignore
 tags
 viminfo
+viminfo.tmp
+viminfz.tmp
 
 dict/
 img/
