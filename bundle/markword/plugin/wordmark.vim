@@ -38,7 +38,8 @@ endif
 
 nnoremap <silent> <Plug>MarkSet   :call <sid>MarkCurrentWord()<cr>
 vnoremap <silent> <Plug>MarkSet   <c-\><c-n>:call <sid>DoMark(<sid>GetVisualSelectionEscaped("enV"))<cr>
-nnoremap <silent> <Plug>MarkClear :call <sid>DoMark(<sid>CurrentMark())<cr>
+nnoremap <silent> <Plug>MarkClear :call <sid>DoMark()<cr>
+"nnoremap <silent> <Plug>MarkClear :call <sid>DoMark(<sid>CurrentMark())<cr>
 
 nnoremap <silent> <unique> <F3> :call <sid>SearchCurrentMark()<cr>
 nnoremap <silent> <unique> <F4> :call <sid>SearchCurrentMark("b")<cr>
