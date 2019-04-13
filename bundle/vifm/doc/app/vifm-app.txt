@@ -1,4 +1,4 @@
-*vifm-app.txt*    For Vifm version 0.10  Last change: 2019 Feb 12
+*vifm-app.txt*    For Vifm version 0.10  Last change: 2019 Apr 10
 
  Email for bugs and suggestions: <xaizek@posteo.net>
 
@@ -342,28 +342,58 @@ alone and they don't wrap when they are used as selectors.
 Filters~
                                                *vifm-filters*
 There are three basic file filters:
- - dot files filter (excluding "." and ".." special directories, whose
-   appearance is controlled by the |vifm-'dotdirs'| option)
- - manual filter for file names
- - automatic filter for file names
- - local filter for file names (see |vifm-=|)
+ - dot files filter (does not affect "." and ".." special directories, whose
+   appearance is controlled by the |vifm-'dotdirs'| option), see
+   |vifm-'dotfiles'|
+ - permanent filter
+ - local filter (see |vifm-=|)
 
-Performing operations on manual filter for file names automatically does the
-same on automatic one.  The file name filter is separated mainly for
-convenience purpose and to get more deterministic behaviour.
+Permanent filter essentially allows defining a group of files names which are
+not desirable to be seen by default, like temporary or backup files, which
+might be created alongside normal ones.  Just like you don't usually need to
+see hidden dot files (files starting with a dot).  Local filter on the other
+hand is for temporary immediate filtering of file list at hand, to get rid of
+uninterested files in the view or to make it possible to use % range in a
+:command.
 
-The basic vim folding key-bindings are used for filters.
+For the purposes of more deterministic editing permanent filter is split
+into two parts:
+ - one edited explicitly via |vifm-:filter| command
+ - another one which is edited implicitly via |vifm-zf| shortcut
+Files are tested against both parts and a match counts if at least one
+of the parts matched.
+
+Each file list has its own copy of each filter.
+
+Filtered files are not checked in / search or :commands.
+
+Files and directories are filtered separately.  This is done by appending
+a slash to a directory name before testing whether it matches the filter.
+Examples:
+>
+ " filter directories which names end with '.files'
+ :filter /^.*\.files\/$/
+
+ " filter files which names end with '.d'
+  :filter {*.d}
+
+ " filter files and directories which names end with '.o'
+ :filter /^.*\.o\/?$/
+<
+Note: vifm uses extended regular expressions.
+
+The basic vim folding key-bindings are used for managing filters.
 
 za - toggle visibility of dot files.           *vifm-za*
 zo - show dot files.                           *vifm-zo*
 zm - hide dot files.                           *vifm-zm*
 
-zf - add selected files to file name filter.   *vifm-zf*
-zO - show files hidden by file name filter.    *vifm-zO*
+zf - add selected files to permanent filter.   *vifm-zf*
+zO - reset permanent filter.                   *vifm-zO*
 
-zM - restore all filters.                      *vifm-zM*
-zR - remove all filters.                       *vifm-zR*
-zr - remove local filter.                      *vifm-zr*
+zR - save and reset all filters.               *vifm-zR*
+zr - clear local filter.                       *vifm-zr*
+zM - restore all filters (undoes last zR).     *vifm-zM*
 
 zd                                             *vifm-zd*
     exclude selection or current file from a custom view.  Does nothing for
@@ -378,24 +408,6 @@ zd                                             *vifm-zd*
     updated as regular expression is changed depends on the value of the
     |vifm-'incsearch'| option.  This kind of filter is automatically reset
     when directory is changed.
-
-Each file list has its own copy of each filter.
-
-Filtered files are not checked in / search or :commands.
-
-Files and directories are filtered separately.  For this a slash is appended
-to a directory name before testing whether it matches the filter.  Examples:
->
- " filter directories which names end with '.files'
- :filter /^.*\.files\/$/
-
- " filter files which names end with '.d'
- :filter /^.*\.d$/
-
- " filter files and directories which names end with '.o'
- :filter /^.*\.o\/?$/
-<
-Note: vifm uses extended regular expressions.
 
 Other Normal Mode Keys~
 
@@ -1018,10 +1030,12 @@ Ctrl-X Ctrl-X t                                *vifm-c_CTRL-X_CTRL-X_t*
 
 
 Ctrl-X a                                       *vifm-c_CTRL-X_a*
-    value of automatic filter of the active pane.
+    value of implicit permanent filter (old name "automatic") of the active
+    pane.
 
 Ctrl-X m                                       *vifm-c_CTRL-X_m*
-    value of manual filter of the active pane.
+    value of explicit permanent filter (old name "manual") of the active
+    pane.
 
 Ctrl-X =                                       *vifm-c_CTRL-X_=*
     value of local filter of the active pane.
@@ -2175,9 +2189,9 @@ yet supported) and might be changed in future releases, or get an alias.
      - for boolean options - nooption, invoption and option!
      - for integer options - option=x, option+=x and option-=x
      - for string options - option=x and option+=x
-     - for string list options - option=x, option+=x and option-=x
+     - for string list options - option=x, option+=x, option-=x and option^=x
      - for enumeration options - option=x, option+=x and option-=x
-     - for set options - option=x, option+=x and option-=x
+     - for set options - option=x, option+=x, option\-=x and option^=x
      - for charset options - option=x, option+=x, option-=x and option^=x
     the meaning:
      - option - turn option on (for boolean) or print its value (for all
@@ -2762,11 +2776,16 @@ There are six possible ways to write a single pattern:
  5. [!]<comma-separated-mime-type-globs>
  6. undecorated-pattern
 
-Flags of regular expressions mean the following:
-  - "i" makes filter case insensitive;
-  - "I" makes filter case sensitive.
-They can be repeated multiple times, but the later one takes precedence (e.g.
-"iiiI" is equivalent to "I" and "IiIi" is the same as "i").
+First five forms can include leading exclamation mark that negates pattern
+matching.
+
+The last form is implicitly refers to one of the others.  |vifm-:highlight|
+does not accept undecorated form, while |vifm-:filetype|, |vifm-:filextype|,
+|vifm-:fileviewer|, |vifm-:select|, |vifm-:unselect| and |vifm-'classify'|
+treat it as list of name globs.
+
+Path patterns receive absolute path of the file that includes its name
+component as well.
 
 To combine several patterns (AND them), make sure you're using one of the
 first five forms and write patterns one after another, like this: >
@@ -2778,62 +2797,77 @@ form.
 comma-separated list of patterns instead of a single pattern, thus effectively
 handling OR operation on them: >
  <text/plain>{*.vifm},<application/pdf>{*.pdf}
+Forms that accept comma-separated lists of patterns also process them as
+lists of alternatives.
 
-Five first forms can include leading exclamation mark that negates pattern
-matching.
-
-The last form is implicitly refers to one of the others.  |vifm-:highlight|
-does not accept undecorated form, while |vifm-:filetype|, |vifm-:filextype|,
-|vifm-:fileviewer|, |vifm-:select|, |vifm-:unselect| and |vifm-'classify'|
-treat it as list of name globs.
+Patterns with regular expressions~
 
 Regular expression patterns are case insensitive by default, see description
 of commands, which might override default behaviour.
 
+Flags of regular expressions mean the following:
+  - "i" makes filter case insensitive;
+  - "I" makes filter case sensitive.
+They can be repeated multiple times, but the later one takes precedence (e.g.
+"iiiI" is equivalent to "I" and "IiIi" is the same as "i").
+
+There are no implicit `^` or `$`, so make sure to specify them explicitly if
+the pattern should match the whole name or path.
+
+Patterns with globs~
+
 |vifm-globs| section provides short overview of globs and some important points
 that one needs to know about them.
 
+Patterns with mime-types~
+
 Mime type matching is essentially globs matching applied to mime type of a file
 instead of its name/path.  Note: mime types aren't detected on Windows.
+
+Examples~
+
+Associate `evince` to PDF-files only inside `/home/user/downloads/` directory
+(excluding its subdirectories): >
+ :filextype //^/home/user/downloads/[^/]*\.pdf$// evince %f
 
 --------------------------------------------------------------------------------
 *vifm-globs*
 
 Globs are always case insensitive as it makes sense in general case.
 
-*, ?, [ and ] are treated as special symbols in the pattern.  E.g. >
+`*`, `?`, `[` and `]` are treated as special symbols in the pattern.  E.g. >
  :filetype * less %c
 matches all files.  One can use character classes for escaping, so >
  :filetype [*] less %c
 matches only one file name, the one which contains only asterisk symbol.
 
-* means any number of any characters (possibly an empty substring), with one
-exception: asterisk at the pattern beginning doesn't match dot in the first
-position.  E.g. >
+`*` means any number of any characters (including slash) and can match an empty
+substring, with one exception: asterisk at the pattern beginning doesn't match
+dot in the first position.  E.g. >
  :fileviewer *.zip,*.jar zip -sf %c
-associates using of zip program to preview all files with zip or jar
-extensions as listing of their content.
+associates using of `zip` program to preview all files with `zip` or `jar`
+extensions as listing of their content, but `.file.zip` won't be matched.
 
-? means any character at this position.  E.g. >
+`?` means any character at this position.  E.g. >
  :fileviewer ?.out file %c
-calls file tool for all files which has exactly one character before their
+calls `file` tool for all files which have exactly one character before their
 extension (e.g. a.out, b.out).
 
 Square brackets designate character class, which means that whole character
 class matches against any of characters listed in it.  For example >
  :fileviewer *.[ch] highlight -O xterm256 -s dante --syntax c %c
-makes vifm call highlight program to colorize source and header files in C
+makes vifm call `highlight` program to colorize source and header files in C
 language for a 256-color terminal.  Equal command would be >
  :fileviewer *.c,*.h highlight -O xterm256 -s dante --syntax c %c
 
-Inside square brackets ^ or ! can be used for symbol class negotiation and
-the - symbol to set a range. ^ and ! should appear right after the opening
+Inside square brackets `^` or `!` can be used for symbol class negotiation and
+the `-` symbol to set a range.  `^` and `!` should appear right after the opening
 square bracket.  For example >
  :filetype *.[!d]/ inspect_dir
-associates inspect_dir as additional handler for all directories that have one
+associates `inspect_dir` as additional handler for all directories that have one
 character extension unless it's "d" letter.  And >
  :filetype [0-9].jpg sxiv
-associates sxiv picture viewer only for JPEG-files that contain single digit
+associates `sxiv` picture viewer only for JPEG-files that contain single digit
 in their name.
 
 --------------------------------------------------------------------------------
@@ -3306,7 +3340,7 @@ columns with file names similar to output of `ls -x` command.  See also
                                                *vifm-'milleroptions'*
 milleroptions
 type: string list
-default: "lsize:1,csize:1,rsize:1"
+default: "lsize:1,csize:1,rsize:1,rpreview:dirs"
 scope: local
 
 Configures miller view.
@@ -3315,10 +3349,15 @@ Configures miller view.
     lsize:num     0           left column
     csize:num     1           center column (can't be disabled)
     rsize:num     0           right column
+    rpreview:str  dirs        right column
 
 *size specifies ratios of columns.  Each ratio is in the range from
 0 to 100 and values are adjusted to fit the limits.  Zero disables a
 column, but central (main) column can't be disabled.
+
+rpreview specifies what file-system objects should be previewed in the right
+column and can take two values: dirs (only directories) or all.  Both options
+don't include parent directory ("..").
 
 Example of two-column mode which is useful in combination with
 |vifm-:view| command: >
