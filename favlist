@@ -1,0 +1,18 @@
+" Files (do not delete this line)
+~/.vim/bundle/myfav/plugin/myfav.vim
+~/.vimrc
+~/.alias
+~/.tmux.conf
+~/.vifm/vifmrc
+~/.vifm/colors/chris.vifm
+~/.vifm/colors/lynna.vifm
+~/.w3m/keymap
+~/.moc/config
+~/.moc/keymap
+~/.moc/themes/chris
+~/.moc/themes/lynna
+
+" Directories (do not delete this line)
+~/docs/note
+/opt/etc
+/opt/util
