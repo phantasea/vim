@@ -1,18 +1,21 @@
-" Files (do not delete this line)
-~/.vim/bundle/myfav/plugin/myfav.vim
+" Favorite Files
 ~/.vimrc
 ~/.alias
 ~/.tmux.conf
+~/.w3m/keymap
 ~/.vifm/vifmrc
 ~/.vifm/colors/chris.vifm
 ~/.vifm/colors/lynna.vifm
-~/.w3m/keymap
+~/.ranger/rc.conf
+~/.ranger/rifle.conf
+~/.ranger/scope.sh
+~/.ranger/colorschemes/chris.py
 ~/.moc/config
 ~/.moc/keymap
 ~/.moc/themes/chris
 ~/.moc/themes/lynna
 
-" Directories (do not delete this line)
+" Favorite Directories
 ~/docs/note
 /opt/etc
 /opt/util
