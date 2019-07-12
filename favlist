@@ -3,20 +3,23 @@
 ~/.alias
 ~/.tmux.conf
 ~/.w3m/keymap
+~/.w3m/config
 ~/.vifm/vifmrc
 ~/.vifm/colors/chris.vifm
 ~/.vifm/colors/lynna.vifm
-~/.ranger/rc.conf
-~/.ranger/rifle.conf
-~/.ranger/scope.sh
-~/.ranger/colorschemes/chris.py
+~/.config/ranger/rc.conf
+~/.config/ranger/rifle.conf
+~/.config/ranger/scope.sh
+~/.config/ranger/colorschemes/chris.py
 ~/.moc/config
 ~/.moc/keymap
 ~/.moc/themes/chris
 ~/.moc/themes/lynna
+~/docs/note/reinstall_ubuntu_16.04.txt
 
 " Favorite Directories
 ~/docs/note
+~/.config
 /opt/conf
 /opt/util
 /usr/local
