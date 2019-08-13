@@ -134,7 +134,8 @@ syntax keyword vifmOption contained aproposprg autochpos caseoptions cdpath cd
 		\ smartcase scs statusline stl suggestoptions syncregs syscalls tabscope
 		\ tabstop timefmt timeoutlen title tm trash trashdir ts tuioptions to
 		\ undolevels ul vicmd viewcolumns vifminfo vimhelp vixcmd wildmenu wmnu
-		\ prefervsplit wildstyle wordchars wrap wrapscan ws
+		\ prefervsplit maxundotabs previewmaxsize topmidfiller
+		\ wildstyle wordchars wrap wrapscan ws
 
 " Disabled boolean options
 syntax keyword vifmOption contained noautochpos nocf nochaselinks nodotfiles
