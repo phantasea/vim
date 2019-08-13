@@ -50,7 +50,7 @@ syntax keyword vifmSetCommand contained se[t] setl[ocal] setg[lobal]
 syntax keyword vifmSoCommand contained so[urce]
 syntax keyword vifmMarkCommand contained ma[rk]
 syntax keyword vifmFtCommand contained filet[ype] filex[type] filev[iewer]
-syntax keyword vifmExprCommand contained if ec[ho] elsei[f] exe[cute]
+syntax keyword vifmExprCommand contained if ec[ho] elsei[f] exe[cute] topmidfiller
 syntax keyword vifmNormalCommand contained norm[al]
 		\ nextgroup=vifmColonSubcommand
 syntax match vifmPatternCommands contained /\<\(filter\(!\|\>\)\|select\(!\|\>\)\|unselect\>\)/ skipwhite
@@ -143,7 +143,7 @@ syntax keyword vifmOption contained noautochpos nocf nochaselinks nodotfiles
 		\ noincsearch nois nolaststatus nols nolsview nomillerview nonumber nonu
 		\ noquickview norelativenumber nornu noscrollbind noscb norunexec
 		\ nosmartcase noscs nosortnumbers nosyscalls notitle notrash novimhelp
-		\ nowildmenu nowmnu nowrap nowrapscan nows
+		\ nowildmenu nowmnu nowrap nowrapscan nows noprefervsplit
 
 " Inverted boolean options
 syntax keyword vifmOption contained invautochpos invcf invchaselinks invdotfiles
