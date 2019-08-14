@@ -1,4 +1,4 @@
-*vifm-app.txt*    For Vifm version 0.10  Last change: 2019 Jul 6
+*vifm-app.txt*    For Vifm version 0.10.1  Last change: 2019 Jul 29
 
  Email for bugs and suggestions: <xaizek@posteo.net>
 
@@ -3315,6 +3315,7 @@ mediaprg
 type: string
 default: path to bundled script that supports udevil, udisks and udisks2
          (using udisks2 requires python with dbus module installed)
+         OS X: path points to a python script that uses diskutil
 
 Specifies command to be used to manage media devices.  Used by |vifm-:media|
 command.
@@ -3574,11 +3575,14 @@ Configures the way size is formatted in human-friendly way.
     precision:    i > 0         How many fraction digits to consider.
                   {not set}     Precision of 1 for integer part < 10,
                                 0 otherwise (provides old behaviour).
+    space         {present}     Insert space before unit symbols.
+                                This is the default.
+    nospace       {present}     Do not insert space before unit symbols.
 
 Numbers are rounded from zero.  Trailing zeros are dropped.
 
 Example: >
- set sizefmt=units:iec,precision:2
+ set sizefmt=units:iec,precision:2,nospace
 <
                                                *vifm-'slowfs'*
                                                {only for *nix}
@@ -3864,8 +3868,15 @@ title
 type: boolean
 default: true when title can be restored, false otherwise
 
-When enabled title of the terminal or terminal multiplexer's window is
-updated according to current location.
+When enabled, title of the terminal or terminal multiplexer's window is
+updated according to current location.  Because not all terminals support
+setting title, this works only if `$TERM` value matches one of the following
+conditions:
+ - equals "xterm" or starts with "xterm-"
+ - equals "rxvt" or starts with "rxvt-"
+ - equals "screen" or starts with "screen-"
+ - equals "aterm"
+ - equals "Eterm"
 
                                                *vifm-'tuioptions'* *vifm-'to'*
 tuioptions to
