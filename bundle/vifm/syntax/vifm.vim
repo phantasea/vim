@@ -147,7 +147,7 @@ syntax keyword vifmOption contained aproposprg autochpos caseoptions cdpath cd
 		\ smartcase scs statusline stl suggestoptions syncregs syscalls tabscope
 		\ tabstop timefmt timeoutlen title tm trash trashdir ts tuioptions to
 		\ undolevels ul vicmd viewcolumns vifminfo vimhelp vixcmd wildmenu wmnu
-		\ prefervsplit maxundotabs previewmaxsize topmidfiller
+		\ prefervsplit maxundotabs previewmaxsize topmidfiller maxratingstars
 		\ wildstyle wordchars wrap wrapscan ws
 
 " Disabled boolean options
