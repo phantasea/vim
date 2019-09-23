@@ -84,7 +84,7 @@ syntax match vifmOperator "\(==\|!=\|>=\?\|<=\?\|\.\|-\|+\|&&\|||\)" skipwhite
 " Highlight groups
 syntax keyword vifmHiArgs contained cterm ctermfg ctermbg
 syntax case ignore
-syntax keyword vifmHiGroups contained WildMenu Menu Border Win CmdLine CurrLine
+syntax keyword vifmHiGroups contained WildMenu Menu Dialog Border Win CmdLine CurrLine
 		\ OtherLine Directory Link Socket Device Executable Selected BrokenLink
 		\ TopLine TopLineSel StatusLine JobLine SuggestBox Fifo ErrorMsg CmpMismatch
 		\ AuxWin OtherWin TabLine TabLineSel
