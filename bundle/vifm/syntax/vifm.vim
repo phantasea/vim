@@ -84,10 +84,10 @@ syntax match vifmOperator "\(==\|!=\|>=\?\|<=\?\|\.\|-\|+\|&&\|||\)" skipwhite
 " Highlight groups
 syntax keyword vifmHiArgs contained cterm ctermfg ctermbg
 syntax case ignore
-syntax keyword vifmHiGroups contained WildMenu Menu Dialog Border Win CmdLine CurrLine
+syntax keyword vifmHiGroups contained WildMenu Border Win CmdLine CurrLine
 		\ OtherLine Directory Link Socket Device Executable Selected BrokenLink
 		\ TopLine TopLineSel StatusLine JobLine SuggestBox Fifo ErrorMsg CmpMismatch
-		\ AuxWin OtherWin TabLine TabLineSel
+		\ Menu Dialog TopMid AuxWin OtherWin TabLine TabLineSel
 		\ User1 User2 User3 User4 User5 User6 User7 User8 User9
 syntax keyword vifmHiStyles contained
 		\ bold underline reverse inverse standout italic none
@@ -148,6 +148,7 @@ syntax keyword vifmOption contained aproposprg autochpos caseoptions cdpath cd
 		\ tabstop timefmt timeoutlen title tm trash trashdir ts tuioptions to
 		\ undolevels ul vicmd viewcolumns vifminfo vimhelp vixcmd wildmenu wmnu
 		\ prefervsplit maxundotabs previewmaxsize topmidfiller maxratingstars
+		\ filenamedisplen filenamedispall
 		\ wildstyle wordchars wrap wrapscan ws
 
 " Disabled boolean options
@@ -156,7 +157,7 @@ syntax keyword vifmOption contained noautochpos nocf nochaselinks nodotfiles
 		\ noincsearch nois nolaststatus nols nolsview nomillerview nonumber nonu
 		\ noquickview norelativenumber nornu noscrollbind noscb norunexec
 		\ nosmartcase noscs nosortnumbers nosyscalls notitle notrash novimhelp
-		\ nowildmenu nowmnu nowrap nowrapscan nows noprefervsplit
+		\ nowildmenu nowmnu nowrap nowrapscan nows noprefervsplit nofilenamedispall
 
 " Inverted boolean options
 syntax keyword vifmOption contained invautochpos invcf invchaselinks invdotfiles
