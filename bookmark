@@ -1,7 +1,9 @@
 " Favorite Files
 ~/.vimrc
 ~/.alias
+~/.bashrc
 ~/.tmux.conf
+~/.fzf.bash
 ~/.w3m/keymap
 ~/.w3m/config
 ~/.vifm/vifmrc
