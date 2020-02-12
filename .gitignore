@@ -13,9 +13,3 @@ Makefile
 LICENSE
 
 *.png
-
-bundle/diff-enhanced
-bundle/surround
-bundle/taglist
-bundle/viewdoc
-
